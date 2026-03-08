@@ -11,6 +11,7 @@ interface Particle {
   color: string;
   side: "left" | "right";
   radius: number;
+  role: string;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -21,6 +22,24 @@ const RADIUS = 11;
 const CYAN = "#00F0FF";
 const MAGENTA = "#FF90E8";
 const AVATAR_SIZE = 22;
+const HOVER_HIT_RADIUS = 22;
+const PARALLAX_FACTOR = 0.05; // lerp speed — low = buttery smooth
+const PARALLAX_CANVAS_PX = 8; // max canvas offset in px
+const PARALLAX_TITLE_PX = 6; // max title offset in px
+const PARALLAX_GRID_PX = 4; // max grid offset in px
+
+const TECH_ROLES = [
+  "FRONTEND",
+  "BACKEND",
+  "DEVOPS",
+  "AI_RESEARCHER",
+  "SYS_ADMIN",
+  "DATA_ENG",
+  "FULL_STACK",
+  "SEC_OPS",
+  "ML_OPS",
+  "UI_UX",
+];
 
 // ── Cute Pixel-Art SVG Avatars ─────────────────────────────────────────────
 const MALE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
@@ -75,7 +94,26 @@ function makeParticle(side: "left" | "right", w: number, h: number): Particle {
     color: side === "left" ? CYAN : MAGENTA,
     side,
     radius: RADIUS,
+    role: TECH_ROLES[Math.floor(Math.random() * TECH_ROLES.length)],
   };
+}
+
+// ── Rounded-rect helper (for tooltip background) ──────────────────────────
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number,
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
 // ── Main page ──────────────────────────────────────────────────────────────
@@ -90,6 +128,24 @@ export default function Home() {
   const femaleImgRef = useRef<HTMLImageElement | null>(null);
   const imagesReadyRef = useRef(false);
 
+  // ── Feature 1: Hover tooltip refs ──
+  const mouseRef = useRef<{ x: number; y: number } | null>(null);
+  const hoveredIndexRef = useRef<number>(-1);
+  const tooltipOpacityRef = useRef(0);
+
+  // ── Feature 2: Parallax refs ──
+  const rawMouseRef = useRef<{ nx: number; ny: number }>({ nx: 0, ny: 0 });
+  const smoothParallaxRef = useRef<{ nx: number; ny: number }>({ nx: 0, ny: 0 });
+  const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
+
+  // ── Feature 3: Easter egg CLI state ──
+  const [cmdVisible, setCmdVisible] = useState(false);
+  const [cmdText, setCmdText] = useState("");
+  const [glitchActive, setGlitchActive] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cmdInputRef = useRef<HTMLInputElement>(null);
+
+  // Load avatar images
   useEffect(() => {
     const mImg = new Image();
     const fImg = new Image();
@@ -110,6 +166,54 @@ export default function Home() {
     return p;
   }, []);
 
+  // ── Feature 3: Easter egg keyboard listener ──
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if meaning popup is open or if focused on an input already
+      if (showMeaning) return;
+
+      // If cmd is visible and focused, let the input handle it
+      if (cmdVisible && cmdInputRef.current === document.activeElement) return;
+
+      // Show CLI on printable key press
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (!cmdVisible) {
+          setCmdVisible(true);
+          setCmdText(e.key.toUpperCase());
+          // Wait a tick for the input to render, then focus it
+          setTimeout(() => cmdInputRef.current?.focus(), 0);
+        }
+        e.preventDefault();
+      }
+
+      if (e.key === "Escape") {
+        setCmdVisible(false);
+        setCmdText("");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [cmdVisible, showMeaning]);
+
+  const handleCmdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      if (cmdText.trim() === "EXECUTE OIKYA") {
+        // Trigger barrier break
+        wallActiveRef.current = false;
+        // Trigger glitch shake
+        setGlitchActive(true);
+        setTimeout(() => setGlitchActive(false), 500);
+      }
+      setCmdVisible(false);
+      setCmdText("");
+    } else if (e.key === "Escape") {
+      setCmdVisible(false);
+      setCmdText("");
+    }
+  };
+
+  // ── Main canvas animation ──
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -125,16 +229,42 @@ export default function Home() {
     resize();
     window.addEventListener("resize", resize);
 
+    // Drag listeners (existing)
     const onDown = () => { isDraggingRef.current = true; };
-    const onMove = () => { if (isDraggingRef.current) wallActiveRef.current = false; };
+    const onMove = (e: MouseEvent) => {
+      if (isDraggingRef.current) wallActiveRef.current = false;
+      // Feature 1: track mouse for hover detection
+      const rect = canvas.getBoundingClientRect();
+      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      // Feature 2: track normalized mouse for parallax
+      const nx = (e.clientX / window.innerWidth) * 2 - 1;  // -1..1
+      const ny = (e.clientY / window.innerHeight) * 2 - 1;
+      rawMouseRef.current = { nx, ny };
+    };
     const onUp = () => { isDraggingRef.current = false; };
+    const onLeave = () => {
+      mouseRef.current = null;
+    };
 
     canvas.addEventListener("mousedown", onDown);
     canvas.addEventListener("mousemove", onMove);
     canvas.addEventListener("mouseup", onUp);
+    canvas.addEventListener("mouseleave", onLeave);
     canvas.addEventListener("touchstart", onDown);
-    canvas.addEventListener("touchmove", onMove);
+    canvas.addEventListener("touchmove", (e) => {
+      if (isDraggingRef.current) wallActiveRef.current = false;
+    });
     canvas.addEventListener("touchend", onUp);
+
+    // Global mousemove for parallax (when mouse is not over canvas)
+    const onGlobalMove = (e: MouseEvent) => {
+      const nx = (e.clientX / window.innerWidth) * 2 - 1;
+      const ny = (e.clientY / window.innerHeight) * 2 - 1;
+      rawMouseRef.current = { nx, ny };
+    };
+    window.addEventListener("mousemove", onGlobalMove);
+
+    let frameCount = 0;
 
     const animate = () => {
       const w = canvas.width;
@@ -143,9 +273,54 @@ export default function Home() {
       const wallActive = wallActiveRef.current;
       const particles = particlesRef.current;
 
+      // ── Feature 2: Smooth parallax interpolation ──
+      const sp = smoothParallaxRef.current;
+      const rp = rawMouseRef.current;
+      sp.nx += (rp.nx - sp.nx) * PARALLAX_FACTOR;
+      sp.ny += (rp.ny - sp.ny) * PARALLAX_FACTOR;
+      const pxOffset = sp.nx * PARALLAX_CANVAS_PX;
+      const pyOffset = sp.ny * PARALLAX_CANVAS_PX;
+
+      // Update React state for title & grid parallax (throttled to every 2 frames)
+      frameCount++;
+      if (frameCount % 2 === 0) {
+        setParallaxOffset({ x: sp.nx, y: sp.ny });
+      }
+
       ctx.clearRect(0, 0, w, h);
 
-      for (const p of particles) {
+      // ── Feature 1: Hover detection ──
+      let newHoveredIndex = -1;
+      const mouse = mouseRef.current;
+      if (mouse) {
+        // Adjust mouse position for parallax offset
+        const mx = mouse.x - pxOffset;
+        const my = mouse.y - pyOffset;
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          const dx = p.x - mx;
+          const dy = p.y - my;
+          if (Math.sqrt(dx * dx + dy * dy) < HOVER_HIT_RADIUS) {
+            newHoveredIndex = i;
+            break;
+          }
+        }
+      }
+
+      // Handle hover state transitions
+      if (newHoveredIndex !== hoveredIndexRef.current) {
+        tooltipOpacityRef.current = 0;
+        hoveredIndexRef.current = newHoveredIndex;
+      }
+      if (newHoveredIndex >= 0) {
+        tooltipOpacityRef.current = Math.min(1, tooltipOpacityRef.current + 0.12);
+      }
+
+      // ── Update particle positions (freeze hovered one) ──
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        if (i === hoveredIndexRef.current) continue; // Freeze hovered particle
+
         p.x += p.vx; p.y += p.vy;
         if (p.x < p.radius) { p.x = p.radius; p.vx = Math.abs(p.vx); }
         if (p.x > w - p.radius) { p.x = w - p.radius; p.vx = -Math.abs(p.vx); }
@@ -157,6 +332,11 @@ export default function Home() {
         }
       }
 
+      // ── Draw with parallax offset ──
+      ctx.save();
+      ctx.translate(pxOffset, pyOffset);
+
+      // Draw links
       if (!wallActive) {
         for (let i = 0; i < particles.length; i++) {
           for (let j = i + 1; j < particles.length; j++) {
@@ -190,6 +370,7 @@ export default function Home() {
         }
       }
 
+      // Draw wall
       if (wallActive) {
         const grad = ctx.createLinearGradient(center, 0, center, h);
         grad.addColorStop(0, "rgba(255,255,255,0)");
@@ -205,9 +386,38 @@ export default function Home() {
         ctx.restore();
       }
 
-      for (const p of particles) {
+      // Draw particles
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
         const half = AVATAR_SIZE / 2;
+        const isHovered = i === hoveredIndexRef.current;
+
         ctx.save();
+
+        // Enhanced glow ring for hovered particle
+        if (isHovered) {
+          const glowRadius = AVATAR_SIZE * 1.1;
+          const hoverGlow = ctx.createRadialGradient(p.x, p.y, AVATAR_SIZE * 0.4, p.x, p.y, glowRadius);
+          const glowColor = p.side === "left" ? "0,240,255" : "255,144,232";
+          hoverGlow.addColorStop(0, `rgba(${glowColor},0.35)`);
+          hoverGlow.addColorStop(0.6, `rgba(${glowColor},0.15)`);
+          hoverGlow.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, glowRadius, 0, Math.PI * 2);
+          ctx.fillStyle = hoverGlow;
+          ctx.fill();
+
+          // Pulsing ring
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, AVATAR_SIZE * 0.85, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(${glowColor}, ${0.4 + Math.sin(Date.now() * 0.006) * 0.2})`;
+          ctx.lineWidth = 1.2;
+          ctx.shadowColor = `rgba(${glowColor}, 0.8)`;
+          ctx.shadowBlur = 10;
+          ctx.stroke();
+        }
+
+        // Normal glow
         ctx.beginPath();
         ctx.arc(p.x, p.y, AVATAR_SIZE * 0.7, 0, Math.PI * 2);
         const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, AVATAR_SIZE * 0.7);
@@ -215,6 +425,7 @@ export default function Home() {
         glow.addColorStop(1, "rgba(0,0,0,0)");
         ctx.fillStyle = glow;
         ctx.fill();
+
         if (imagesReadyRef.current) {
           const img = p.side === "left" ? maleImgRef.current : femaleImgRef.current;
           if (img) {
@@ -232,6 +443,62 @@ export default function Home() {
         ctx.restore();
       }
 
+      // ── Feature 1: Draw tooltip for hovered particle ──
+      if (hoveredIndexRef.current >= 0 && tooltipOpacityRef.current > 0) {
+        const hp = particles[hoveredIndexRef.current];
+        const tooltipText = `[ROLE: ${hp.role}]`;
+        const opacity = tooltipOpacityRef.current;
+
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.font = "10px 'JetBrains Mono', monospace";
+
+        const textMetrics = ctx.measureText(tooltipText);
+        const textW = textMetrics.width;
+        const padX = 10;
+        const padY = 6;
+        const tipW = textW + padX * 2;
+        const tipH = 22;
+
+        // Position tooltip: above-right of the avatar, but clamp to canvas bounds
+        let tipX = hp.x + AVATAR_SIZE * 0.5 + 6;
+        let tipY = hp.y - AVATAR_SIZE - 8;
+        // Clamp right edge
+        if (tipX + tipW > w - 10) tipX = hp.x - tipW - 6;
+        // Clamp top
+        if (tipY < 10) tipY = hp.y + AVATAR_SIZE + 8;
+
+        // Draw pill background
+        ctx.save();
+        roundRect(ctx, tipX, tipY, tipW, tipH, 4);
+        ctx.fillStyle = "rgba(10, 10, 18, 0.9)";
+        ctx.fill();
+
+        // Border
+        const borderColor = hp.side === "left" ? "rgba(0,240,255,0.6)" : "rgba(255,144,232,0.6)";
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 1;
+        ctx.shadowColor = borderColor;
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw text
+        ctx.save();
+        const textColor = hp.side === "left" ? "#00F0FF" : "#FF90E8";
+        ctx.fillStyle = textColor;
+        ctx.shadowColor = textColor;
+        ctx.shadowBlur = 12;
+        ctx.font = "bold 10px 'JetBrains Mono', monospace";
+        ctx.textBaseline = "middle";
+        ctx.fillText(tooltipText, tipX + padX, tipY + tipH / 2);
+        ctx.restore();
+
+        ctx.restore();
+      }
+
+      ctx.restore(); // end parallax translate
+
       animFrameRef.current = requestAnimationFrame(animate);
     };
 
@@ -240,17 +507,30 @@ export default function Home() {
     return () => {
       cancelAnimationFrame(animFrameRef.current);
       window.removeEventListener("resize", resize);
+      window.removeEventListener("mousemove", onGlobalMove);
       canvas.removeEventListener("mousedown", onDown);
       canvas.removeEventListener("mousemove", onMove);
       canvas.removeEventListener("mouseup", onUp);
+      canvas.removeEventListener("mouseleave", onLeave);
       canvas.removeEventListener("touchstart", onDown);
-      canvas.removeEventListener("touchmove", onMove);
       canvas.removeEventListener("touchend", onUp);
     };
   }, [initParticles]);
 
+  // ── Derived parallax styles ──
+  const gridBgStyle = {
+    backgroundPosition: `${-parallaxOffset.x * PARALLAX_GRID_PX}px ${-parallaxOffset.y * PARALLAX_GRID_PX}px`,
+  };
+  const titleParallaxStyle = {
+    transform: `translate(${parallaxOffset.x * PARALLAX_TITLE_PX}px, ${parallaxOffset.y * PARALLAX_TITLE_PX}px)`,
+  };
+
   return (
-    <div className="relative min-h-screen w-full bg-[#0a0a0a] overflow-hidden dot-grid">
+    <div
+      ref={containerRef}
+      className={`relative min-h-screen w-full bg-[#0a0a0a] overflow-hidden dot-grid ${glitchActive ? "glitch-shake" : ""}`}
+      style={gridBgStyle}
+    >
 
       {/* ── Radial gradient backlight z-[-1] ── */}
       <div
@@ -287,7 +567,7 @@ export default function Home() {
           PROJECT
         </p>
 
-        {/* Main title — gradient text Syne style */}
+        {/* Main title — gradient text Syne style + parallax */}
         <h1
           className="syne-heading gradient-text-cool"
           onClick={() => setShowMeaning(true)}
@@ -296,6 +576,8 @@ export default function Home() {
             filter: "drop-shadow(0 0 18px rgba(178,141,255,0.65)) drop-shadow(0 0 40px rgba(0,240,255,0.25))",
             cursor: "pointer",
             pointerEvents: "auto",
+            transition: "transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+            ...titleParallaxStyle,
           }}
           title="Click to reveal meaning"
         >
@@ -479,6 +761,78 @@ export default function Home() {
         </div>
 
       </div>
+
+      {/* ── Feature 3: Easter Egg CLI ── */}
+      {cmdVisible && (
+        <div
+          className="cmd-slide-up"
+          style={{
+            position: "fixed",
+            bottom: "56px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 200,
+            pointerEvents: "auto",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "rgba(10, 10, 18, 0.92)",
+              border: "1px solid rgba(0, 240, 255, 0.35)",
+              borderRadius: "4px",
+              padding: "8px 16px",
+              boxShadow: "0 0 20px rgba(0,240,255,0.15), inset 0 0 15px rgba(0,0,0,0.4)",
+              minWidth: "280px",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: "12px",
+                color: "#00F0FF",
+                userSelect: "none",
+                flexShrink: 0,
+              }}
+            >
+              &gt;
+            </span>
+            <input
+              ref={cmdInputRef}
+              type="text"
+              value={cmdText}
+              onChange={(e) => setCmdText(e.target.value.toUpperCase())}
+              onKeyDown={handleCmdKeyDown}
+              spellCheck={false}
+              autoComplete="off"
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: "12px",
+                color: "rgba(255,255,255,0.9)",
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                width: "100%",
+                caretColor: "#00F0FF",
+                letterSpacing: "0.08em",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: "12px",
+                color: "#00F0FF",
+                animation: "hud-blink 1s step-start infinite",
+                flexShrink: 0,
+              }}
+            >
+              _
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* ── Meaning Popup ── */}
       {showMeaning && (
