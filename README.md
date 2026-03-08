@@ -29,20 +29,20 @@ Wrapped in a **Gen-Z Hacker / Cyber-Data HUD** aesthetic, the application invite
 
 <br />
 
-## 👁️ The Simulation
+## // THE_SIMULATION
 
 ### `STATE_01: ISOLATION`
-Upon initialization, 40 pixel-art entities (representing male and female developers) are strictly separated by an invisible vertical barrier. They move, but they cannot connect.
+Upon initialization, 40 pixel-art entities (representing male and female developers) are strictly separated by an invisible vertical barrier. They move, but they cannot connect. The system status remains `AWAITING_CATALYST`.
 
 ### `CATALYST_EVENT: DRAG_TO_BREAK`
-The user's interaction—clicking and dragging across the center barrier—acts as the catalyst. The invisible wall shatters.
+The user's interaction—clicking and dragging across the center barrier—acts as the catalyst. The invisible wall shatters, triggering an aggressive system glitch and an auditory burst of shattered glass.
 
 ### `STATE_02: UNIFIED_NETWORK`
-Once broken, the entities freely intermix. The system dynamically draws glowing, gradient network links (cyan to purple to magenta) between nearby avatars. The isolated silos transform into a single, vibrant, and equal community.
+Once broken, the entities freely intermix. The system dynamically draws glowing, gradient network links (cyan to purple to magenta) between nearby avatars. The isolated silos transform into a single, vibrant, and equal community. The system status updates to `UNIFIED`.
 
 <br />
 
-## ⚡ Features & Interactivity
+## // FEATURES_AND_INTERACTIVITY
 
 - **Dynamic HUD Metrics:** The system overlays feature a reactive "Neo-Brutalist" dashboard tracking real-time data: `ENTITIES`, live `CONNECTIONS`, and overall `SYNERGY %`.
 - **Procedural Audio (Web Audio API):**
@@ -57,7 +57,7 @@ Once broken, the entities freely intermix. The system dynamically draws glowing,
 
 <br />
 
-## 🛠️ Stack & Architecture
+## // STACK_AND_ARCHITECTURE
 
 - **Framework:** Next.js (App Router)
 - **Language:** TypeScript
@@ -67,7 +67,7 @@ Once broken, the entities freely intermix. The system dynamically draws glowing,
 
 <br />
 
-## 🚀 Running Locally
+## // RUNNING_LOCALLY
 
 ```bash
 # Clone the repository
