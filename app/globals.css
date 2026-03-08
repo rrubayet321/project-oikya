@@ -1,26 +1,276 @@
 @import "tailwindcss";
 
+/* Fonts loaded via next/font in layout.tsx — CSS vars injected automatically */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0e0e0e;
+  --foreground: #f0ede6;
+  --accent-pink: #FF90E8;
+  --accent-red: #FF6B6B;
+  --accent-yellow: #FACC15;
+  --accent-cyan: #00F0FF;
+  --accent-magenta: #FF007F;
+  --accent-purple: #B28DFF;
+  --accent-green: #05C9AC;
+  --neo-shadow: 4px 4px 0px 0px #000000;
+  --neo-shadow-lg: 6px 6px 0px 0px #000000;
+  --neo-border: 2px solid rgba(255, 255, 255, 0.12);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-space-grotesk), sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+  --font-syne: var(--font-syne), sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Space Grotesk", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Animations ─────────────────────────────────────────────────── */
+
+@keyframes hud-blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes hud-pulse {
+
+  0%,
+  100% {
+    opacity: 0.55;
+    text-shadow: 0 0 0px rgba(255, 255, 255, 0);
+  }
+
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 0 0 24px rgba(0, 240, 255, 0.3);
+  }
+}
+
+@keyframes instruction-pulse {
+
+  0%,
+  100% {
+    opacity: 0.6;
+    text-shadow: 0 0 0px rgba(255, 255, 255, 0);
+  }
+
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 20px rgba(0, 240, 255, 0.4);
+  }
+}
+
+@keyframes mission-pulse {
+
+  0%,
+  100% {
+    opacity: 0.55;
+    text-shadow: 0 0 0px rgba(0, 240, 255, 0);
+  }
+
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.7), 0 0 22px rgba(0, 240, 255, 0.3);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.88) translateY(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0px);
+  }
+}
+
+@keyframes float-badge {
+
+  0%,
+  100% {
+    transform: rotate(-3deg) translateY(0px);
+  }
+
+  50% {
+    transform: rotate(-3deg) translateY(-6px);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ── Utility Classes ─────────────────────────────────────────────── */
+
+.hud-pulse {
+  animation: hud-pulse 3s ease-in-out infinite;
+}
+
+.instruction-pulse {
+  animation: instruction-pulse 2.8s ease-in-out infinite;
+}
+
+.mission-pulse {
+  animation: mission-pulse 2.4s ease-in-out infinite;
+}
+
+/* Syne heading style (mayesha.dev signature) */
+.syne-heading {
+  font-family: "Syne", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+}
+
+/* Neo-Brutalist card (dark variant) */
+.neo-card {
+  border: var(--neo-border);
+  box-shadow: var(--neo-shadow);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.neo-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--neo-shadow-lg);
+}
+
+/* Gradient text (mayesha.dev hero style) */
+.gradient-text-warm {
+  background: linear-gradient(90deg, #FF6B6B, #FF90E8, #B28DFF);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s ease infinite;
+}
+
+.gradient-text-cool {
+  background: linear-gradient(90deg, #00F0FF, #B28DFF, #FF90E8);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s ease infinite;
+}
+
+/* Floating badge */
+.float-badge {
+  animation: float-badge 3s ease-in-out infinite;
+}
+
+/* Hollow text (mayesha.dev signature stroke effect) */
+.text-stroke {
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.15);
+  color: transparent;
+}
+
+/* Subtle dot-grid background */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ── Easter Egg: glitch-shake animation ─────────────────────────── */
+@keyframes glitch-shake {
+  0% {
+    transform: translate(0, 0) skewX(0deg);
+  }
+
+  10% {
+    transform: translate(-4px, 2px) skewX(-1deg);
+  }
+
+  20% {
+    transform: translate(3px, -3px) skewX(0.5deg);
+  }
+
+  30% {
+    transform: translate(-2px, 1px) skewX(-0.5deg);
+  }
+
+  40% {
+    transform: translate(4px, -1px) skewX(1deg);
+  }
+
+  50% {
+    transform: translate(-3px, 3px) skewX(-1.5deg);
+  }
+
+  60% {
+    transform: translate(2px, -2px) skewX(0.8deg);
+  }
+
+  70% {
+    transform: translate(-4px, 1px) skewX(-0.3deg);
+  }
+
+  80% {
+    transform: translate(3px, -3px) skewX(1.2deg);
+  }
+
+  90% {
+    transform: translate(-1px, 2px) skewX(-0.6deg);
+  }
+
+  100% {
+    transform: translate(0, 0) skewX(0deg);
+  }
+}
+
+.glitch-shake {
+  animation: glitch-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* ── Easter Egg: cmd-slide-up animation ─────────────────────────── */
+@keyframes cmd-slide-up {
+  from {
+    transform: translateX(-50%) translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+.cmd-slide-up {
+  animation: cmd-slide-up 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

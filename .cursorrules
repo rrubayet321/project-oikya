@@ -1,0 +1,27 @@
+# Project Oikya - Antigravity Agent Rules
+
+## 1. Tech Stack & Architecture
+- **Framework:** Next.js (App Router).
+- **Styling:** Tailwind CSS ONLY. Do not use standard CSS files or inline styles.
+- **Language:** TypeScript. Use strict typing where possible, but prioritize speed and rapid iteration ("vibe coding").
+- **Animations:** Use `react-tsparticles` for the background canvas and Framer Motion (if requested) for UI animations.
+
+## 2. UI / UX Aesthetic (STRICT)
+- **Vibe:** "Gen-Z Hacker", "Neo-Brutalist Bento", "Cyber-Data HUD". 
+- **Colors:** Deep dark backgrounds (`bg-[#0a0a0a]` or `bg-black`), Neon Cyan (`#00F0FF`), and Neon Magenta (`#FF007F`).
+- **Typography:** Use strict Monospace fonts (e.g., `font-mono`) for all UI overlays, metrics, and technical text. 
+- **Components:** Frame UI elements with frosted glass (`backdrop-blur`), subtle 1px glowing borders (`border-white/10`), or thick neo-brutalist white borders.
+- **Tone:** Copywriting should feel like a futuristic operating system (e.g., "SYSTEM_STATUS", "INITIATING", "ENTITIES").
+
+## 3. Coding Standards
+- ALWAYS write functional React components.
+- Keep components modular. If a file gets too long, separate the UI overlays from the Canvas logic.
+- Do not remove the `react-tsparticles` canvas logic when updating UI overlays unless explicitly told to.
+- ALWAYS use `pointer-events-none` on UI layers that sit on top of the interactive particle canvas, so the user can still click the background.
+
+## 4. Execution
+- Do not apologize or add unnecessary conversational filler in the code comments.
+- Give me the full code for a file when making structural changes, rather than just snippets, to avoid integration errors.
+
+
+Project Oikya" (meaning 'unity' or 'solidarity' in Bengali) is an interactive frontend art piece for the DEV.to WeCoded 2026 challenge, celebrating gender equity in software development. The visual metaphor uses a particle physics simulation wrapped in a futuristic, 'Gen-Z Hacker / Cyber-Data HUD' aesthetic. Initially, two groups of particles (representing male and female developers) are strictly separated by an invisible vertical barrier, symbolizing the historical and systemic gender divide in the tech industry. The user's interaction (clicking and dragging across the barrier) acts as the catalyst for change, shattering the invisible wall. Once broken, the particles freely mix and draw glowing, interconnected network links to one another, visually transforming a state of rigid division into a beautiful, unified, and equal community
