@@ -145,6 +145,32 @@ export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
   const cmdInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Dynamic Metrics state ──
+  const [liveConnections, setLiveConnections] = useState(0);
+  const [liveSynergy, setLiveSynergy] = useState(0);
+  const [liveStatus, setLiveStatus] = useState("AWAITING_CATALYST");
+  const [crossLinks, setCrossLinks] = useState(0);
+  const wallBrokenRef = useRef(false);
+
+  // ── Audio refs ──
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const droneNodeRef = useRef<OscillatorNode | null>(null);
+  const droneGainRef = useRef<GainNode | null>(null);
+  const audioStartedRef = useRef(false);
+
+  // ── Boot Intro state ──
+  const [introDone, setIntroDone] = useState(false);
+  const [introLines, setIntroLines] = useState<string[]>([]);
+  const [introFading, setIntroFading] = useState(false);
+
+  const BOOT_LINES = [
+    "> INITIALIZING OIKYA_PROTOCOL v2.26...",
+    "> LOADING 40 ENTITIES...",
+    "> BARRIER: ██████████ ACTIVE",
+    "> GENDER_DIVIDE_SIMULATION: READY",
+    "> AWAITING HUMAN CATALYST...",
+  ];
+
   // Load avatar images
   useEffect(() => {
     const mImg = new Image();
@@ -166,11 +192,104 @@ export default function Home() {
     return p;
   }, []);
 
+  // ── Boot Intro typed sequence ──
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < BOOT_LINES.length) {
+        setIntroLines((prev) => [...prev, BOOT_LINES[i]]);
+        i++;
+      } else {
+        clearInterval(interval);
+        setTimeout(() => setIntroFading(true), 600);
+        setTimeout(() => setIntroDone(true), 1400);
+      }
+    }, 420);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Audio helpers ──
+  const initAudio = useCallback(() => {
+    if (audioStartedRef.current) return;
+    audioStartedRef.current = true;
+    const ctx = new AudioContext();
+    audioCtxRef.current = ctx;
+
+    // Ambient drone — two detuned oscillators
+    const droneGain = ctx.createGain();
+    droneGain.gain.value = 0.03;
+    droneGain.connect(ctx.destination);
+    droneGainRef.current = droneGain;
+
+    const osc1 = ctx.createOscillator();
+    osc1.type = "sine";
+    osc1.frequency.value = 55;
+    osc1.connect(droneGain);
+    osc1.start();
+
+    const osc2 = ctx.createOscillator();
+    osc2.type = "sine";
+    osc2.frequency.value = 55.4; // slight detune for movement
+    osc2.connect(droneGain);
+    osc2.start();
+    droneNodeRef.current = osc1;
+  }, []);
+
+  const playShatter = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    // White noise burst + filter sweep for "glass shatter"
+    const bufferSize = ctx.sampleRate * 0.4;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+    }
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = "highpass";
+    filter.frequency.value = 2000;
+    filter.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.3);
+    const gain = ctx.createGain();
+    gain.gain.value = 0.15;
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    source.start();
+  }, []);
+
+  const playPing = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = 800 + Math.random() * 600;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.02;
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+  }, []);
+
+  const triggerBarrierBreak = useCallback(() => {
+    if (!wallBrokenRef.current) {
+      wallBrokenRef.current = true;
+      setLiveStatus("UNIFIED");
+      initAudio();
+      setTimeout(() => playShatter(), 50);
+    }
+  }, [initAudio, playShatter]);
+
   // ── Feature 3: Easter egg keyboard listener ──
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if meaning popup is open or if focused on an input already
-      if (showMeaning) return;
+      // Ignore if meaning popup is open, intro playing, or if focused on an input
+      if (showMeaning || !introDone) return;
 
       // If cmd is visible and focused, let the input handle it
       if (cmdVisible && cmdInputRef.current === document.activeElement) return;
@@ -201,6 +320,7 @@ export default function Home() {
       if (cmdText.trim() === "EXECUTE OIKYA") {
         // Trigger barrier break
         wallActiveRef.current = false;
+        triggerBarrierBreak();
         // Trigger glitch shake
         setGlitchActive(true);
         setTimeout(() => setGlitchActive(false), 500);
@@ -232,7 +352,10 @@ export default function Home() {
     // Drag listeners (existing)
     const onDown = () => { isDraggingRef.current = true; };
     const onMove = (e: MouseEvent) => {
-      if (isDraggingRef.current) wallActiveRef.current = false;
+      if (isDraggingRef.current) {
+        wallActiveRef.current = false;
+        triggerBarrierBreak();
+      }
       // Feature 1: track mouse for hover detection
       const rect = canvas.getBoundingClientRect();
       mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -338,12 +461,19 @@ export default function Home() {
 
       // Draw links
       if (!wallActive) {
+        let currentConns = 0;
+        let currentCross = 0;
+
         for (let i = 0; i < particles.length; i++) {
           for (let j = i + 1; j < particles.length; j++) {
             const a = particles[i], b = particles[j];
             const dx = a.x - b.x, dy = a.y - b.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist >= LINK_DISTANCE) continue;
+
+            currentConns++;
+            if (a.side !== b.side) currentCross++;
+
             const alpha = (1 - dist / LINK_DISTANCE) * 0.6;
             ctx.save();
             ctx.beginPath();
@@ -367,6 +497,17 @@ export default function Home() {
             ctx.stroke();
             ctx.restore();
           }
+        }
+
+        // Update state periodically and trigger pings
+        if (frameCount % 8 === 0) {
+          setLiveConnections(currentConns);
+          setLiveSynergy(Math.min(100, Math.floor((currentConns / 140) * 100)));
+
+          setCrossLinks(prev => {
+            if (currentCross > prev && Math.random() > 0.4) playPing();
+            return currentCross;
+          });
         }
       }
 
@@ -625,22 +766,39 @@ export default function Home() {
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px" }} className="space-y-2">
               <div className="flex items-center gap-2">
                 <span style={{ color: "rgba(0,240,255,0.5)" }}>&gt;</span>
-                <span style={{ color: "rgba(255,255,255,0.3)" }}>STATUS</span>
-                <span style={{ color: "rgba(255,255,255,0.15)", margin: "0 2px" }}>:</span>
-                <span style={{ color: "#00F0FF" }}>AWAITING_CATALYST</span>
+                <span style={{ width: "80px", color: "rgba(255,255,255,0.3)" }}>STATUS</span>
+                <span style={{ color: "rgba(255,255,255,0.15)" }}>:</span>
+                <span style={{ color: liveStatus === "UNIFIED" ? "#B28DFF" : "#00F0FF" }}>{liveStatus}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span style={{ color: "rgba(0,240,255,0.5)" }}>&gt;</span>
-                <span style={{ color: "rgba(255,255,255,0.3)" }}>ENTITIES</span>
-                <span style={{ color: "rgba(255,255,255,0.15)", margin: "0 2px" }}>:</span>
+                <span style={{ width: "80px", color: "rgba(255,255,255,0.3)" }}>ENTITIES</span>
+                <span style={{ color: "rgba(255,255,255,0.15)" }}>:</span>
                 <span style={{ color: "#00F0FF" }}>40</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span style={{ color: "rgba(0,240,255,0.5)" }}>&gt;</span>
-                <span style={{ color: "rgba(255,255,255,0.3)" }}>PROTOCOL</span>
-                <span style={{ color: "rgba(255,255,255,0.15)", margin: "0 2px" }}>:</span>
-                <span style={{ color: "#00F0FF" }}>WECD_2026</span>
-              </div>
+              {liveStatus === "UNIFIED" ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span style={{ color: "rgba(0,240,255,0.5)" }}>&gt;</span>
+                    <span style={{ width: "80px", color: "rgba(255,255,255,0.3)" }}>CONNECTIONS</span>
+                    <span style={{ color: "rgba(255,255,255,0.15)" }}>:</span>
+                    <span style={{ color: "#FF90E8" }}>{liveConnections}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span style={{ color: "rgba(0,240,255,0.5)" }}>&gt;</span>
+                    <span style={{ width: "80px", color: "rgba(255,255,255,0.3)" }}>SYNERGY</span>
+                    <span style={{ color: "rgba(255,255,255,0.15)" }}>:</span>
+                    <span style={{ color: "#05C9AC" }}>{liveSynergy}%</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span style={{ color: "rgba(0,240,255,0.5)" }}>&gt;</span>
+                  <span style={{ width: "80px", color: "rgba(255,255,255,0.3)" }}>PROTOCOL</span>
+                  <span style={{ color: "rgba(255,255,255,0.15)" }}>:</span>
+                  <span style={{ color: "#00F0FF" }}>WECD_2026</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -910,6 +1068,46 @@ export default function Home() {
           </div>
         </div>
       )}
+      {/* ── Boot Intro Overlay ── */}
+      {!introDone && (
+        <div
+          className="absolute inset-0 z-[200] flex flex-col items-start justify-end p-8 pointer-events-none"
+          style={{
+            background: "#0a0a0a",
+            opacity: introFading ? 0 : 1,
+            transition: "opacity 0.8s ease-in-out",
+          }}
+        >
+          <div className="flex flex-col gap-3">
+            {introLines.map((line, idx) => (
+              <p
+                key={idx}
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: "13px",
+                  color: "#00F0FF",
+                  textShadow: "0 0 8px rgba(0,240,255,0.5)",
+                }}
+              >
+                {line}
+              </p>
+            ))}
+            {introLines.length < BOOT_LINES.length && (
+              <p
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: "13px",
+                  color: "#00F0FF",
+                  animation: "hud-blink 0.8s step-start infinite",
+                }}
+              >
+                _
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
