@@ -34,11 +34,11 @@ interface SparklesTextProps {
 
     /**
      * @required
-     * @type string
+     * @type string | React.ReactNode
      * @description
      * The text to be displayed
      * */
-    text: string;
+    text: string | React.ReactNode;
 
     /**
      * @default 10

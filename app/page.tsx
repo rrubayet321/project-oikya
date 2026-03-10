@@ -68,6 +68,15 @@ export default function Home() {
   const [bootKey, setBootKey] = useState(0);
   const [speedFactor, setSpeedFactor] = useState(1.0);
 
+  // Animate the main Oikya text to swap colors every 5s
+  const [swapOikya, setSwapOikya] = useState(false);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSwapOikya(prev => !prev);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Images are generated per-particle now.
 
   const initParticles = useCallback((w: number, h: number, speed: number = SPEED) => {
@@ -672,10 +681,32 @@ export default function Home() {
           aria-label="Click to reveal meaning of Oikya"
         >
           <SparklesText
-            text="Oikya"
+            text={
+              <span className="flex items-baseline">
+                <span
+                  style={{
+                    color: swapOikya ? MAGENTA : CYAN,
+                    transition: "color 1s ease-in-out, text-shadow 1s ease-in-out",
+                    textShadow: `0 0 30px ${swapOikya ? "rgba(255,144,232,0.6)" : "rgba(0,240,255,0.6)"}`
+                  }}
+                >
+                  O
+                </span>
+                <span className="gradient-text-cool px-[1px]">iky</span>
+                <span
+                  style={{
+                    color: swapOikya ? CYAN : MAGENTA,
+                    transition: "color 1s ease-in-out, text-shadow 1s ease-in-out",
+                    textShadow: `0 0 30px ${swapOikya ? "rgba(0,240,255,0.6)" : "rgba(255,144,232,0.6)"}`
+                  }}
+                >
+                  a
+                </span>
+              </span>
+            }
             colors={{ first: "#00F0FF", second: "#FF90E8" }}
             sparklesCount={12}
-            className="gradient-text-cool"
+            className=""
           />
         </div>
 
