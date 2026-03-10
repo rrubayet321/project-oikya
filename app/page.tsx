@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import HeroWave from "@/components/ui/dynamic-wave-canvas-background";
+import { SparklesText } from "@/components/ui/sparkles-text";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Particle {
@@ -14,10 +16,23 @@ interface Particle {
   role: string;
 }
 
+interface Shard {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  angle: number;
+  vAngle: number;
+  size: number;
+  life: number;
+  maxLife: number;
+  color: string;
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────
 const PARTICLE_COUNT = 40;
 const LINK_DISTANCE = 130;
-const SPEED = 1.2;
+const SPEED = 3.2;
 const RADIUS = 11;
 const CYAN = "#00F0FF";
 const MAGENTA = "#FF90E8";
@@ -121,6 +136,7 @@ export default function Home() {
   const [showMeaning, setShowMeaning] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
+  const shardsRef = useRef<Shard[]>([]);
   const wallActiveRef = useRef(true);
   const isDraggingRef = useRef(false);
   const animFrameRef = useRef<number>(0);
@@ -152,7 +168,8 @@ export default function Home() {
   const [crossLinks, setCrossLinks] = useState(0);
   const wallBrokenRef = useRef(false);
 
-  // ── Audio refs ──
+  // ── Audio refs & state ──
+  const [isMuted, setIsMuted] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const droneNodeRef = useRef<OscillatorNode | null>(null);
   const droneGainRef = useRef<GainNode | null>(null);
@@ -237,6 +254,7 @@ export default function Home() {
   }, []);
 
   const playShatter = useCallback(() => {
+    if (isMuted) return;
     const ctx = audioCtxRef.current;
     if (!ctx) return;
     // White noise burst + filter sweep for "glass shatter"
@@ -259,9 +277,10 @@ export default function Home() {
     filter.connect(gain);
     gain.connect(ctx.destination);
     source.start();
-  }, []);
+  }, [isMuted]);
 
   const playPing = useCallback(() => {
+    if (isMuted) return;
     const ctx = audioCtxRef.current;
     if (!ctx) return;
     const osc = ctx.createOscillator();
@@ -274,14 +293,50 @@ export default function Home() {
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.15);
-  }, []);
+  }, [isMuted]);
 
-  const triggerBarrierBreak = useCallback(() => {
+  // Effect to handle muting the continuous drone
+  useEffect(() => {
+    if (droneGainRef.current) {
+      droneGainRef.current.gain.setTargetAtTime(isMuted ? 0 : 0.03, audioCtxRef.current?.currentTime || 0, 0.1);
+    }
+  }, [isMuted]);
+
+  const triggerBarrierBreak = useCallback((breakX?: number, breakY?: number) => {
     if (!wallBrokenRef.current) {
       wallBrokenRef.current = true;
       setLiveStatus("UNIFIED");
       initAudio();
       setTimeout(() => playShatter(), 50);
+
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const bx = breakX ?? canvas.width / 2;
+        const by = breakY ?? canvas.height / 2;
+        const newShards: Shard[] = [];
+        const shardCount = 80;
+        for (let i = 0; i < shardCount; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 2 + Math.random() * 15;
+          const life = 60 + Math.random() * 80;
+          const r = Math.random();
+          const color = r < 0.33 ? "rgba(0,240,255," : r < 0.66 ? "rgba(255,144,232," : "rgba(255,255,255,";
+
+          newShards.push({
+            x: bx,
+            y: by,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            angle: Math.random() * Math.PI * 2,
+            vAngle: (Math.random() - 0.5) * 0.4,
+            size: 2 + Math.random() * 8,
+            life,
+            maxLife: life,
+            color,
+          });
+        }
+        shardsRef.current = newShards; // Mount the shards!
+      }
     }
   }, [initAudio, playShatter]);
 
@@ -352,13 +407,17 @@ export default function Home() {
     // Drag listeners (existing)
     const onDown = () => { isDraggingRef.current = true; };
     const onMove = (e: MouseEvent) => {
-      if (isDraggingRef.current) {
-        wallActiveRef.current = false;
-        triggerBarrierBreak();
-      }
       // Feature 1: track mouse for hover detection
       const rect = canvas.getBoundingClientRect();
-      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      if (isDraggingRef.current && wallActiveRef.current) {
+        wallActiveRef.current = false;
+        triggerBarrierBreak(mouseX, mouseY);
+      }
+
+      mouseRef.current = { x: mouseX, y: mouseY };
       // Feature 2: track normalized mouse for parallax
       const nx = (e.clientX / window.innerWidth) * 2 - 1;  // -1..1
       const ny = (e.clientY / window.innerHeight) * 2 - 1;
@@ -410,7 +469,48 @@ export default function Home() {
         setParallaxOffset({ x: sp.nx, y: sp.ny });
       }
 
-      ctx.clearRect(0, 0, w, h);
+      // ── Feature 4: Long-exposure motion trails ──
+      const trailOpacity = wallActive ? 0.35 : 0.15;
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillStyle = `rgba(0, 0, 0, ${trailOpacity})`;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = "source-over";
+
+      // ── Draw & Update Shards (Glass Shatter) ──
+      const shards = shardsRef.current;
+      for (let i = shards.length - 1; i >= 0; i--) {
+        const s = shards[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vy += 0.3; // gravity
+        s.vx *= 0.95; // friction
+        s.vy *= 0.95;
+        s.angle += s.vAngle;
+        s.life -= 1;
+
+        if (s.life <= 0) {
+          shards.splice(i, 1);
+          continue;
+        }
+
+        const alpha = Math.max(0, s.life / s.maxLife);
+        ctx.save();
+        ctx.translate(s.x, s.y);
+        ctx.rotate(s.angle);
+
+        ctx.fillStyle = `${s.color}${alpha})`;
+        ctx.shadowColor = `${s.color}${alpha})`;
+        ctx.shadowBlur = 10;
+
+        // Draw sharp triangles
+        ctx.beginPath();
+        ctx.moveTo(0, -s.size);
+        ctx.lineTo(s.size, s.size);
+        ctx.lineTo(-s.size, s.size * 0.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
 
       // ── Feature 1: Hover detection ──
       let newHoveredIndex = -1;
@@ -669,16 +769,21 @@ export default function Home() {
   return (
     <div
       ref={containerRef}
-      className={`relative min-h-screen w-full bg-[#0a0a0a] overflow-hidden dot-grid ${glitchActive ? "glitch-shake" : ""}`}
+      className={`relative min-h-screen w-full overflow-hidden dot-grid ${glitchActive ? "glitch-shake" : ""}`}
       style={gridBgStyle}
     >
+      {/* ── Solid Background Color z-[-3] ── */}
+      <div className="absolute inset-0 bg-[#0a0a0a] z-[-3]" />
+
+      {/* ── Dynamic Wave Background z-[-2] ── */}
+      <HeroWave />
 
       {/* ── Radial gradient backlight z-[-1] ── */}
       <div
         className="absolute inset-0"
         style={{
           zIndex: -1,
-          background: "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(100,20,100,0.28) 0%, rgba(80,10,60,0.12) 45%, transparent 75%)",
+          background: "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(100,20,100,0.2) 0%, rgba(80,10,60,0.08) 45%, transparent 75%)",
           pointerEvents: "none",
         }}
       />
@@ -690,40 +795,54 @@ export default function Home() {
         style={{ width: "100%", height: "100%" }}
       />
 
-      {/* ── Central text z-10 ── */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center pointer-events-none select-none">
+      {/* ── Central text z-10 (Fades out when broken) ── */}
+      <div
+        className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center pointer-events-none select-none transition-opacity duration-1000"
+        style={{ opacity: liveStatus === "UNIFIED" ? 0 : 1 }}
+      >
 
-        {/* Hollow ghost text above (mayesha.dev stroke signature) */}
+        {/* Artistic subtitle text */}
         <p
-          className="font-bold tracking-tight mb-1"
+          className="tracking-widest mb-1"
           style={{
-            fontFamily: "'Syne', sans-serif",
-            fontSize: "clamp(3rem, 8vw, 6rem)",
-            lineHeight: 1,
-            letterSpacing: "-0.05em",
-            WebkitTextStroke: "1.5px rgba(255,255,255,0.25)",
-            color: "transparent",
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontWeight: 400,
+            textTransform: "uppercase",
+            fontSize: "clamp(0.85rem, 1.4vw, 1.05rem)",
+            letterSpacing: "0.40em",
+            color: "rgba(255,255,255,0.6)",
+            textShadow: "0 0 10px rgba(255,144,232,0.2)",
           }}
         >
-          PROJECT
+          THE INITIATIVE
         </p>
 
-        {/* Main title — gradient text Syne style + parallax */}
-        <h1
-          className="syne-heading gradient-text-cool"
+        {/* Main title — ultra-bold geometric header with Sparkles */}
+        <div
           onClick={() => setShowMeaning(true)}
           style={{
-            fontSize: "clamp(5rem, 13vw, 10rem)",
-            filter: "drop-shadow(0 0 18px rgba(178,141,255,0.65)) drop-shadow(0 0 40px rgba(0,240,255,0.25))",
-            cursor: "pointer",
+            cursor: liveStatus === "UNIFIED" ? "default" : "pointer",
             pointerEvents: "auto",
             transition: "transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+            fontFamily: "var(--font-syne), sans-serif",
+            fontWeight: 700,
+            fontSize: "clamp(4.5rem, 8vw, 7.5rem)",
+            lineHeight: 0.9,
+            letterSpacing: "-0.04em",
+            filter: "drop-shadow(0 0 20px rgba(178,141,255,0.5)) drop-shadow(0 0 40px rgba(0,240,255,0.2))",
             ...titleParallaxStyle,
           }}
           title="Click to reveal meaning"
+          role="button"
+          aria-label="Click to reveal meaning of Oikya"
         >
-          Oikya
-        </h1>
+          <SparklesText
+            text="Oikya"
+            colors={{ first: "#00F0FF", second: "#FF90E8" }}
+            sparklesCount={12}
+            className="gradient-text-cool"
+          />
+        </div>
 
         {/* Instruction */}
         <p className="mt-5 instruction-pulse"
@@ -836,17 +955,18 @@ export default function Home() {
           <p
             className="mission-pulse"
             style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: "10px",
-              letterSpacing: "0.22em",
+              fontFamily: "var(--font-syne), sans-serif",
+              fontSize: "12px",
+              fontWeight: 700,
               textTransform: "uppercase",
+              letterSpacing: "0.2em",
               color: "rgba(0,240,255,0.85)",
-              filter: "drop-shadow(0 0 6px rgba(0,240,255,0.5))",
+              filter: "drop-shadow(0 0 8px rgba(0,240,255,0.4))",
             }}
           >
-            <span style={{ color: "rgba(0,240,255,0.5)", marginRight: "4px" }}>[</span>
-            MISSION: BREAKING ISOLATION
-            <span style={{ color: "rgba(0,240,255,0.5)", marginLeft: "4px" }}>]</span>
+            <span style={{ color: "rgba(0,240,255,0.4)", marginRight: "6px" }}>[</span>
+            Mission: Breaking Isolation
+            <span style={{ color: "rgba(0,240,255,0.4)", marginLeft: "6px" }}>]</span>
           </p>
 
           {/* L-frame corner accent */}
@@ -905,16 +1025,16 @@ export default function Home() {
         >
           <p
             style={{
-              fontFamily: "'Syne', sans-serif",
-              fontWeight: 700,
-              fontSize: "11px",
-              letterSpacing: "0.35em",
+              fontFamily: "var(--font-space-grotesk), sans-serif",
+              fontWeight: 400,
               textTransform: "uppercase",
-              WebkitTextStroke: "0.8px rgba(255,255,255,0.3)",
-              color: "transparent",
+              fontSize: "11px",
+              letterSpacing: "0.3em",
+              color: "rgba(255,255,255,0.3)",
+              textShadow: "0 0 8px rgba(255,144,232,0.15)"
             }}
           >
-            PEOPLE BEHIND THE CODE
+            The People Behind The Code
           </p>
         </div>
 
@@ -992,79 +1112,139 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Meaning Popup ── */}
+      {/* ── Meaning Popup (Full-Screen Premium Modal) ── */}
       {showMeaning && (
         <div
-          className="absolute inset-0 z-[100] flex items-center justify-center"
-          style={{ backdropFilter: "blur(4px)", background: "rgba(0,0,0,0.55)" }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-6 md:p-12 overflow-y-auto"
+          style={{
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+            background: "radial-gradient(ellipse at center, rgba(15, 12, 22, 0.7) 0%, rgba(5, 5, 8, 0.96) 100%)",
+            animation: "popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+          }}
           onClick={() => setShowMeaning(false)}
         >
+          {/* Internal Container */}
           <div
             onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-5xl mx-auto flex flex-col md:flex-row rounded-lg overflow-hidden"
             style={{
-              background: "rgba(10,10,18,0.92)",
-              border: "1px solid rgba(0,240,255,0.35)",
-              boxShadow: "0 0 40px rgba(178,141,255,0.25), 0 0 80px rgba(0,240,255,0.1), inset 0 0 30px rgba(0,0,0,0.5)",
-              borderRadius: "4px",
-              padding: "36px 40px 32px",
-              maxWidth: "420px",
-              width: "90vw",
-              position: "relative",
-              animation: "popIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both",
+              background: "rgba(10, 10, 15, 0.7)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              boxShadow: "0 30px 60px -15px rgba(0, 0, 0, 1), 0 0 100px rgba(178, 141, 255, 0.12) inset",
+              opacity: 0,
+              animation: "popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards",
             }}
           >
-            {/* Corner accents */}
-            <div style={{ position: "absolute", top: 0, left: 0, width: 18, height: 18, borderTop: "1.5px solid rgba(0,240,255,0.7)", borderLeft: "1.5px solid rgba(0,240,255,0.7)" }} />
-            <div style={{ position: "absolute", top: 0, right: 0, width: 18, height: 18, borderTop: "1.5px solid rgba(0,240,255,0.7)", borderRight: "1.5px solid rgba(0,240,255,0.7)" }} />
-            <div style={{ position: "absolute", bottom: 0, left: 0, width: 18, height: 18, borderBottom: "1.5px solid rgba(255,144,232,0.7)", borderLeft: "1.5px solid rgba(255,144,232,0.7)" }} />
-            <div style={{ position: "absolute", bottom: 0, right: 0, width: 18, height: 18, borderBottom: "1.5px solid rgba(255,144,232,0.7)", borderRight: "1.5px solid rgba(255,144,232,0.7)" }} />
+            {/* Corner Bracket Accents */}
+            <div style={{ position: "absolute", top: 0, left: 0, width: 32, height: 32, borderTop: "2px solid rgba(0,240,255,0.8)", borderLeft: "2px solid rgba(0,240,255,0.8)", zIndex: 10 }} />
+            <div style={{ position: "absolute", bottom: 0, right: 0, width: 32, height: 32, borderBottom: "2px solid rgba(255,144,232,0.8)", borderRight: "2px solid rgba(255,144,232,0.8)", zIndex: 10 }} />
 
-            {/* Close button */}
+            {/* Close Button */}
             <button
               onClick={() => setShowMeaning(false)}
+              className="absolute top-6 right-8 text-2xl transition-opacity hover:opacity-100 opacity-50 z-20"
               style={{
-                position: "absolute", top: 12, right: 14,
                 background: "none", border: "none", cursor: "pointer",
-                fontFamily: "'JetBrains Mono', monospace", fontSize: "14px",
-                color: "rgba(255,255,255,0.35)", lineHeight: 1,
+                fontFamily: "'JetBrains Mono', monospace",
+                color: "#fff",
               }}
-              aria-label="Close"
+              aria-label="Close meaning popup"
             >
               ✕
             </button>
 
-            {/* Label */}
-            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "9px", color: "rgba(0,240,255,0.5)", letterSpacing: "0.35em", textTransform: "uppercase", marginBottom: "20px" }}>
-              // LEXICON_ENTRY
-            </p>
+            {/* Left Col: Lexicon Entry */}
+            <div className="md:w-5/12 p-8 md:p-14 border-b md:border-b-0 md:border-r border-white/5 flex flex-col justify-center relative bg-black/40">
+              {/* Subtle Cyan Glow */}
+              <div
+                className="absolute inset-0 pointer-events-none opacity-20"
+                style={{ background: "radial-gradient(circle at top left, #00F0FF 0%, transparent 70%)" }}
+              />
 
-            {/* Bengali script */}
-            <p style={{ fontFamily: "serif", fontSize: "clamp(3rem, 10vw, 4.5rem)", lineHeight: 1.1, color: "transparent", WebkitTextStroke: "1.5px rgba(255,255,255,0.85)", marginBottom: "8px", filter: "drop-shadow(0 0 12px rgba(178,141,255,0.5))" }}>
-              ঐক্য
-            </p>
+              <div className="relative z-10 w-full">
+                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "rgba(0,240,255,0.7)", letterSpacing: "0.4em", textTransform: "uppercase", marginBottom: "32px", borderBottom: "1px solid rgba(0,240,255,0.15)", paddingBottom: "10px", display: "inline-block" }}>
+                  // LEXICON_ENTRY
+                </p>
 
-            {/* Transliteration */}
-            <p style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 700, color: "rgba(0,240,255,0.9)", letterSpacing: "0.08em", marginBottom: "16px" }}>
-              Oikya  <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", fontWeight: 400, fontFamily: "'JetBrains Mono', monospace" }}>/oi·kyo/</span>
-            </p>
+                {/* Bengali Script */}
+                <h2 style={{ fontFamily: "serif", fontSize: "clamp(4.5rem, 12vw, 7.5rem)", lineHeight: 1, color: "transparent", WebkitTextStroke: "2px rgba(255,255,255,0.9)", marginBottom: "8px", filter: "drop-shadow(0 0 25px rgba(178,141,255,0.35))" }}>
+                  ঐক্য
+                </h2>
 
-            {/* Divider */}
-            <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(0,240,255,0.3), transparent)", marginBottom: "16px" }} />
+                {/* Phonetics */}
+                <p className="mb-8" style={{ fontFamily: "'Syne', sans-serif", fontSize: "32px", fontWeight: 700, color: "rgba(0,240,255,0.95)", letterSpacing: "0.02em" }}>
+                  Oikya  <span style={{ fontSize: "14px", color: "rgba(255,255,255,0.4)", fontWeight: 400, fontFamily: "'JetBrains Mono', monospace", marginLeft: "14px", verticalAlign: "middle" }}>/oi·kyo/</span>
+                </p>
 
-            {/* Definition */}
-            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "rgba(255,255,255,0.7)", lineHeight: 1.7, marginBottom: "12px" }}>
-              <span style={{ color: "rgba(0,240,255,0.6)" }}>&gt;</span> <span style={{ color: "rgba(255,144,232,0.9)", fontWeight: 700 }}>noun</span> · Bengali (বাংলা)
-            </p>
-            <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "15px", color: "rgba(255,255,255,0.85)", lineHeight: 1.65, marginBottom: "18px" }}>
-              <span style={{ color: "#B28DFF", fontWeight: 600 }}>1.</span> Unity; the state of being united or joined together.
-              <br />
-              <span style={{ color: "#B28DFF", fontWeight: 600 }}>2.</span> Solidarity; the bond formed between individuals through shared purpose.
-            </p>
+                {/* Definition Header */}
+                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "13px", color: "rgba(255,255,255,0.5)", lineHeight: 1.7, marginBottom: "16px" }}>
+                  <span style={{ color: "rgba(0,240,255,0.8)" }}>&gt;</span> <span style={{ color: "rgba(255,144,232,0.9)", fontWeight: 700 }}>noun</span> · Bengali (বাংলা)
+                </p>
 
-            {/* Etymology hint */}
-            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "rgba(255,255,255,0.25)", letterSpacing: "0.05em", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "12px" }}>
-              ↳ From Sanskrit <span style={{ color: "rgba(255,144,232,0.5)" }}>ऐक्य</span> (aikya) — <em>oneness</em>
-            </p>
+                {/* Definitions */}
+                <div className="space-y-4" style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "16px", color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
+                  <p className="pl-4 border-l border-purple-500/30">
+                    <span style={{ color: "#B28DFF", fontWeight: 600, marginRight: "8px" }}>1.</span>The state of being undeniably united.
+                  </p>
+                  <p className="pl-4 border-l border-purple-500/30">
+                    <span style={{ color: "#B28DFF", fontWeight: 600, marginRight: "8px" }}>2.</span>A bond formed between distinct entities to create a unified system.
+                  </p>
+                </div>
+
+                {/* Roots */}
+                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.05em", marginTop: "40px" }}>
+                  ↳ Root: Sanskrit <span style={{ color: "rgba(255,144,232,0.6)" }}>ऐक्य</span> (aikya) — <em>oneness</em>
+                </p>
+              </div>
+            </div>
+
+            {/* Right Col: Lore / Context */}
+            <div className="md:w-7/12 p-8 md:p-14 flex flex-col justify-center relative bg-black/20">
+              {/* Subtle Magenta Glow */}
+              <div
+                className="absolute inset-0 pointer-events-none opacity-10"
+                style={{ background: "radial-gradient(circle at bottom right, #FF90E8 0%, transparent 80%)" }}
+              />
+
+              <div className="relative z-10 w-full flex flex-col h-full justify-between">
+                <div>
+                  <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "rgba(255,144,232,0.7)", letterSpacing: "0.3em", textTransform: "uppercase", marginBottom: "16px" }}>
+                    // THE_INITIATIVE: FRONTEND ART
+                  </p>
+
+                  <h3 className="mb-6" style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(2rem, 4vw, 2.5rem)", fontWeight: 800, lineHeight: 1.1, color: "#fff", letterSpacing: "-0.02em" }}>
+                    Shattering the <span className="gradient-text-cool inline-block pr-1 shadow-magenta">Glass Ceiling</span>.
+                  </h3>
+
+                  <div className="space-y-6" style={{ fontFamily: "'Syne', sans-serif", fontSize: "19px", color: "rgba(255,255,255,0.9)", lineHeight: 1.6, fontWeight: 500 }}>
+                    <p style={{ textShadow: "0 0 20px rgba(255,144,232,0.2)" }}>
+                      Historically, the tech industry has operated in isolated silos. Women and men developers often existed within the same ecosystem, yet systemic barriers—the proverbial "glass ceiling"—kept their communities separated.
+                    </p>
+                    <p style={{ textShadow: "0 0 20px rgba(0,240,255,0.2)" }}>
+                      <strong>Project Oikya</strong> is a living simulation of gender equity. Upon initialization, the entities run parallel but isolated. They possess the exact same capabilities, but the system code artificially prevents connection.
+                    </p>
+                    <p className="p-5 rounded-md border border-cyan-500/30 bg-black/40 text-white shadow-[0_0_30px_rgba(0,240,255,0.15)]" style={{ fontSize: "20px", fontWeight: 600 }}>
+                      By dragging across the barrier, <em style={{ color: "#FF90E8", fontStyle: "normal", fontWeight: 800, textShadow: "0 0 15px rgba(255,144,232,0.6)" }}>you act as the catalyst</em>. The glass shatters. The network intertwines, forming a beautiful, unified canvas where boundaries no longer compute.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer Metadata */}
+                <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+                  <div>
+                    <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>DEVELOPED FOR</p>
+                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: "16px", fontWeight: 700, color: "rgba(0,240,255,0.9)" }}>DEV WeCoded 2026</p>
+                  </div>
+                  <div className="text-right">
+                    <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>CHALLENGE PROMPT</p>
+                    <p style={{ fontFamily: "'Syne', sans-serif", fontSize: "16px", fontWeight: 700, color: "rgba(255,144,232,0.9)" }}>Frontend Art: Gender Equity</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -1107,6 +1287,28 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* ── Audio Toggle (Bottom Right) ── */}
+      <div className="absolute bottom-6 right-6 z-50 pointer-events-auto">
+        <button
+          onClick={() => setIsMuted(!isMuted)}
+          className="flex items-center gap-2 px-3 py-2 rounded-sm border transition-colors duration-200"
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: "10px",
+            letterSpacing: "0.2em",
+            borderColor: isMuted ? "rgba(255, 107, 107, 0.4)" : "rgba(0, 240, 255, 0.3)",
+            background: "rgba(10, 10, 10, 0.6)",
+            backdropFilter: "blur(4px)",
+            color: isMuted ? "rgba(255, 107, 107, 0.8)" : "rgba(0, 240, 255, 0.8)",
+          }}
+          aria-label={isMuted ? "Unmute sound" : "Mute sound"}
+        >
+          <span>[</span>
+          <span>SOUND: {isMuted ? "OFF" : "ON"}</span>
+          <span>]</span>
+        </button>
+      </div>
 
     </div>
   );

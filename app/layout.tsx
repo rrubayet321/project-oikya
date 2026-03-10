@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Syne, Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Syne, Space_Grotesk, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
 const syne = Syne({
@@ -20,6 +20,13 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500"],
 });
 
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
   title: "Project Oikya — Breaking Isolation",
   description: "An interactive art piece celebrating the people behind the code. WECD 2026.",
@@ -33,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${syne.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
+        className={`${syne.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${playfair.variable} antialiased`}
       >
         {children}
       </body>
