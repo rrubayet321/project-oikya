@@ -4,132 +4,28 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import HeroWave from "@/components/ui/dynamic-wave-canvas-background";
 import { SparklesText } from "@/components/ui/sparkles-text";
 
-// ── Types ──────────────────────────────────────────────────────────────────
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  color: string;
-  side: "left" | "right";
-  radius: number;
-  role: string;
-}
-
-interface Shard {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  angle: number;
-  vAngle: number;
-  size: number;
-  life: number;
-  maxLife: number;
-  color: string;
-}
-
-// ── Constants ──────────────────────────────────────────────────────────────
-const PARTICLE_COUNT = 40;
-const LINK_DISTANCE = 130;
-const SPEED = 3.2;
-const RADIUS = 11;
-const CYAN = "#00F0FF";
-const MAGENTA = "#FF90E8";
-const AVATAR_SIZE = 22;
-const HOVER_HIT_RADIUS = 22;
-const PARALLAX_FACTOR = 0.05; // lerp speed — low = buttery smooth
-const PARALLAX_CANVAS_PX = 8; // max canvas offset in px
-const PARALLAX_TITLE_PX = 6; // max title offset in px
-const PARALLAX_GRID_PX = 4; // max grid offset in px
-
-const TECH_ROLES = [
-  "FRONTEND",
-  "BACKEND",
-  "DEVOPS",
-  "AI_RESEARCHER",
-  "SYS_ADMIN",
-  "DATA_ENG",
-  "FULL_STACK",
-  "SEC_OPS",
-  "ML_OPS",
-  "UI_UX",
-];
-
-// ── Cute Pixel-Art SVG Avatars ─────────────────────────────────────────────
-const MALE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <rect x="3" y="10" width="10" height="6" fill="#3B82F6"/>
-  <rect x="5" y="10" width="6" height="2" fill="#2563EB"/>
-  <rect x="6" y="8" width="4" height="2" fill="#FBBF24"/>
-  <rect x="4" y="3" width="8" height="7" fill="#FBBF24"/>
-  <rect x="4" y="2" width="2" height="2" fill="#1F2937"/>
-  <rect x="6" y="1" width="2" height="3" fill="#1F2937"/>
-  <rect x="8" y="2" width="2" height="2" fill="#1F2937"/>
-  <rect x="10" y="1" width="2" height="3" fill="#1F2937"/>
-  <rect x="4" y="6" width="3" height="2" fill="#1F2937"/>
-  <rect x="9" y="6" width="3" height="2" fill="#1F2937"/>
-  <rect x="7" y="7" width="2" height="1" fill="#1F2937"/>
-  <rect x="5" y="6" width="1" height="1" fill="#60A5FA"/>
-  <rect x="10" y="6" width="1" height="1" fill="#60A5FA"/>
-  <rect x="6" y="9" width="4" height="1" fill="#92400E"/>
-  <rect x="6" y="12" width="4" height="2" fill="#2563EB"/>
-</svg>`;
-
-const FEMALE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <rect x="3" y="10" width="10" height="6" fill="#EC4899"/>
-  <rect x="5" y="10" width="6" height="2" fill="#DB2777"/>
-  <rect x="6" y="8" width="4" height="2" fill="#FBBF24"/>
-  <rect x="4" y="3" width="8" height="7" fill="#FBBF24"/>
-  <rect x="3" y="2" width="10" height="3" fill="#7C3AED"/>
-  <rect x="3" y="5" width="2" height="5" fill="#7C3AED"/>
-  <rect x="11" y="5" width="2" height="5" fill="#7C3AED"/>
-  <rect x="4" y="6" width="3" height="2" fill="#1F2937"/>
-  <rect x="9" y="6" width="3" height="2" fill="#1F2937"/>
-  <rect x="7" y="7" width="2" height="1" fill="#1F2937"/>
-  <rect x="5" y="6" width="1" height="1" fill="#F472B6"/>
-  <rect x="10" y="6" width="1" height="1" fill="#F472B6"/>
-  <rect x="6" y="9" width="4" height="1" fill="#92400E"/>
-  <rect x="6" y="12" width="4" height="2" fill="#DB2777"/>
-</svg>`;
-
-function svgToDataUrl(svgStr: string): string {
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgStr)}`;
-}
-
-function makeParticle(side: "left" | "right", w: number, h: number): Particle {
-  const half = w / 2;
-  const angle = Math.random() * Math.PI * 2;
-  return {
-    x: side === "left"
-      ? Math.random() * (half - 30) + 15
-      : Math.random() * (half - 30) + half + 15,
-    y: Math.random() * (h - 30) + 15,
-    vx: Math.cos(angle) * SPEED * (0.5 + Math.random()),
-    vy: Math.sin(angle) * SPEED * (0.5 + Math.random()),
-    color: side === "left" ? CYAN : MAGENTA,
-    side,
-    radius: RADIUS,
-    role: TECH_ROLES[Math.floor(Math.random() * TECH_ROLES.length)],
-  };
-}
-
-// ── Rounded-rect helper (for tooltip background) ──────────────────────────
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number, y: number, w: number, h: number, r: number,
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
+import {
+  Particle,
+  Shard,
+  PARTICLE_COUNT,
+  LINK_DISTANCE,
+  SPEED,
+  CYAN,
+  MAGENTA,
+  AVATAR_SIZE,
+  HOVER_HIT_RADIUS,
+  PARALLAX_FACTOR,
+  PARALLAX_CANVAS_PX,
+  PARALLAX_TITLE_PX,
+  PARALLAX_GRID_PX,
+  MALE_SVG,
+  FEMALE_SVG,
+  svgToDataUrl,
+  makeParticle,
+  roundRect
+} from "@/lib/simulation-utils";
+import { IntroBootSequence } from "@/components/simulation/IntroBootSequence";
+import { EasterEggCLI } from "@/components/ui/EasterEggCLI";
 
 // ── Main page ──────────────────────────────────────────────────────────────
 export default function Home() {
@@ -155,11 +51,8 @@ export default function Home() {
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
 
   // ── Feature 3: Easter egg CLI state ──
-  const [cmdVisible, setCmdVisible] = useState(false);
-  const [cmdText, setCmdText] = useState("");
   const [glitchActive, setGlitchActive] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const cmdInputRef = useRef<HTMLInputElement>(null);
 
   // ── Dynamic Metrics state ──
   const [liveConnections, setLiveConnections] = useState(0);
@@ -177,17 +70,8 @@ export default function Home() {
 
   // ── Boot Intro state ──
   const [introDone, setIntroDone] = useState(false);
-  const [introLines, setIntroLines] = useState<string[]>([]);
-  const [introFading, setIntroFading] = useState(false);
+  const [bootKey, setBootKey] = useState(0);
   const [speedFactor, setSpeedFactor] = useState(1.0);
-
-  const BOOT_LINES = [
-    "> INITIALIZING OIKYA_PROTOCOL v2.26...",
-    "> LOADING 40 ENTITIES...",
-    "> BARRIER: ██████████ ACTIVE",
-    "> GENDER_DIVIDE_SIMULATION: READY",
-    "> AWAITING HUMAN CATALYST...",
-  ];
 
   // Load avatar images
   useEffect(() => {
@@ -216,27 +100,10 @@ export default function Home() {
     return p;
   }, []);
 
-  // ── Boot Intro typed sequence ──
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < BOOT_LINES.length) {
-        setIntroLines((prev) => [...prev, BOOT_LINES[i]]);
-        i++;
-      } else {
-        clearInterval(interval);
-        setTimeout(() => setIntroFading(true), 600);
-        setTimeout(() => setIntroDone(true), 1400);
-      }
-    }, 420);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [introDone]); // Re-run if introDone resets
 
   const handleRestart = useCallback(() => {
     setIntroDone(false);
-    setIntroLines([]);
-    setIntroFading(false);
+    setBootKey(prev => prev + 1);
     wallActiveRef.current = true;
     wallBrokenRef.current = false;
     setLiveStatus("AWAITING_CATALYST");
@@ -363,53 +230,6 @@ export default function Home() {
     }
   }, [initAudio, playShatter]);
 
-  // ── Feature 3: Easter egg keyboard listener ──
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if meaning popup is open, intro playing, or if focused on an input
-      if (showMeaning || !introDone) return;
-
-      // If cmd is visible and focused, let the input handle it
-      if (cmdVisible && cmdInputRef.current === document.activeElement) return;
-
-      // Show CLI on printable key press
-      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        if (!cmdVisible) {
-          setCmdVisible(true);
-          setCmdText(e.key.toUpperCase());
-          // Wait a tick for the input to render, then focus it
-          setTimeout(() => cmdInputRef.current?.focus(), 0);
-        }
-        e.preventDefault();
-      }
-
-      if (e.key === "Escape") {
-        setCmdVisible(false);
-        setCmdText("");
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cmdVisible, showMeaning]);
-
-  const handleCmdKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      if (cmdText.trim() === "EXECUTE OIKYA") {
-        // Trigger barrier break
-        wallActiveRef.current = false;
-        triggerBarrierBreak();
-        // Trigger glitch shake
-        setGlitchActive(true);
-        setTimeout(() => setGlitchActive(false), 500);
-      }
-      setCmdVisible(false);
-      setCmdText("");
-    } else if (e.key === "Escape") {
-      setCmdVisible(false);
-      setCmdText("");
-    }
-  };
 
   // ── Main canvas animation ──
   useEffect(() => {
@@ -806,7 +626,7 @@ export default function Home() {
         className="absolute inset-0"
         style={{
           zIndex: -1,
-          background: "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(100,20,100,0.2) 0%, rgba(80,10,60,0.08) 45%, transparent 75%)",
+          background: "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(0,25,40,0.15) 0%, rgba(0,10,20,0.08) 45%, transparent 75%)",
           pointerEvents: "none",
         }}
       />
@@ -1164,76 +984,17 @@ export default function Home() {
       </div>
 
       {/* ── Feature 3: Easter Egg CLI ── */}
-      {cmdVisible && (
-        <div
-          className="cmd-slide-up"
-          style={{
-            position: "fixed",
-            bottom: "56px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 200,
-            pointerEvents: "auto",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "rgba(10, 10, 18, 0.92)",
-              border: "1px solid rgba(0, 240, 255, 0.35)",
-              borderRadius: "4px",
-              padding: "8px 16px",
-              boxShadow: "0 0 20px rgba(0,240,255,0.15), inset 0 0 15px rgba(0,0,0,0.4)",
-              minWidth: "280px",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: "12px",
-                color: "#00F0FF",
-                userSelect: "none",
-                flexShrink: 0,
-              }}
-            >
-              &gt;
-            </span>
-            <input
-              ref={cmdInputRef}
-              type="text"
-              value={cmdText}
-              onChange={(e) => setCmdText(e.target.value.toUpperCase())}
-              onKeyDown={handleCmdKeyDown}
-              spellCheck={false}
-              autoComplete="off"
-              style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: "12px",
-                color: "rgba(255,255,255,0.9)",
-                background: "transparent",
-                border: "none",
-                outline: "none",
-                width: "100%",
-                caretColor: "#00F0FF",
-                letterSpacing: "0.08em",
-              }}
-            />
-            <span
-              style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: "12px",
-                color: "#00F0FF",
-                animation: "hud-blink 1s step-start infinite",
-                flexShrink: 0,
-              }}
-            >
-              _
-            </span>
-          </div>
-        </div>
-      )}
+      {/* ── Feature 3: Easter Egg CLI ── */}
+      <EasterEggCLI
+        showMeaning={showMeaning}
+        introDone={introDone}
+        onExecuteOikya={() => {
+          wallActiveRef.current = false;
+          triggerBarrierBreak();
+          setGlitchActive(true);
+          setTimeout(() => setGlitchActive(false), 500);
+        }}
+      />
 
       {/* ── Meaning Popup (Full-Screen Premium Modal) ── */}
       {showMeaning && (
@@ -1372,44 +1133,7 @@ export default function Home() {
         </div>
       )}
       {/* ── Boot Intro Overlay ── */}
-      {!introDone && (
-        <div
-          className="absolute inset-0 z-[200] flex flex-col items-start justify-end p-8 pointer-events-none"
-          style={{
-            background: "#0a0a0a",
-            opacity: introFading ? 0 : 1,
-            transition: "opacity 0.8s ease-in-out",
-          }}
-        >
-          <div className="flex flex-col gap-3">
-            {introLines.map((line, idx) => (
-              <p
-                key={idx}
-                style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: "13px",
-                  color: "#00F0FF",
-                  textShadow: "0 0 8px rgba(0,240,255,0.5)",
-                }}
-              >
-                {line}
-              </p>
-            ))}
-            {introLines.length < BOOT_LINES.length && (
-              <p
-                style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: "13px",
-                  color: "#00F0FF",
-                  animation: "hud-blink 0.8s step-start infinite",
-                }}
-              >
-                _
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      <IntroBootSequence key={bootKey} onComplete={() => setIntroDone(true)} />
 
       {/* ── Audio Toggle (Bottom Right) ── */}
       <div className="absolute bottom-6 right-6 z-50 pointer-events-auto">
