@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { CyberLoader } from "@/components/ui/CyberLoader";
 
 interface IntroBootSequenceProps {
     onComplete?: () => void;
@@ -47,6 +48,10 @@ export function IntroBootSequence({ onComplete }: IntroBootSequenceProps) {
             className={`absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0a0a0a] transition-opacity duration-700 ease-in-out ${introFading ? "opacity-0 pointer-events-none" : "opacity-100"
                 }`}
         >
+            <div className="mb-8 drop-shadow-[0_0_15px_rgba(0,240,255,0.3)]">
+                <CyberLoader />
+            </div>
+
             <div className="text-left w-full max-w-lg px-6 font-mono text-[#00F0FF] text-sm md:text-base leading-relaxed tracking-wider drop-shadow-[0_0_12px_rgba(0,240,255,0.4)]">
                 {introLines.map((line, idx) => (
                     <div key={idx} className="mb-2 animate-pulse-fast">
