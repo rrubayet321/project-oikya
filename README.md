@@ -109,7 +109,9 @@ Visit [http://localhost:3000](http://localhost:3000) to act as the catalyst.
 
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2026 Rubayet Hassan
 
 ---
 
