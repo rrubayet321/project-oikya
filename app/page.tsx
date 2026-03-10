@@ -908,12 +908,7 @@ export default function Home() {
         {/* Bottom-left: Control Center Panel */}
         <div className="absolute bottom-24 left-6 pointer-events-auto">
           <div
-            className="neo-card rounded-sm px-4 py-3 min-w-[200px]"
-            style={{
-              borderColor: "rgba(178,141,255,0.3)",
-              boxShadow: "4px 4px 0px 0px rgba(178,141,255,0.1)",
-              background: "rgba(10, 10, 15, 0.8)",
-            }}
+            className="neo-card rounded-sm px-4 py-3 min-w-[200px] transition-all duration-300 border-[rgba(178,141,255,0.3)] bg-[rgba(10,10,15,0.8)] shadow-[4px_4px_0px_0px_rgba(178,141,255,0.1)] hover:shadow-[0_0_25px_rgba(178,141,255,0.4),4px_4px_0px_0px_rgba(178,141,255,0.1)] hover:border-[rgba(178,141,255,0.6)]"
           >
             <p
               style={{
