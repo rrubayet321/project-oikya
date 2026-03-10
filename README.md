@@ -32,10 +32,10 @@ User enters the simulation -> Boot sequence initializes systems
 ```
 
 **Interaction Controls:**
-- **Click "Oikya"**: Deep-dive into the project's semantic meaning and lore via a premium glassmorphic modal.
+- **Click "Oikya"**: Deep-dive into the project's semantic meaning and lore via a premium glassmorphic modal. Guided by a glowing, pulsing "CLICK TO DECRYPT THEME" UI hint.
 - **Drag Barrier**: Shatter the systemic divide manually.
 - **Control Center (Bottom-Left)**: 
-    - `REBOOT_SYSTEM`: Full state reset with fresh boot logs.
+    - `REBOOT_SYSTEM`: Full state reset with fresh boot logs and a glowing `CyberLoader` animation.
     - `Velocity_Factor`: Real-time avatar speed adjustment (0.5x – 3.0x).
     - `GLITCH_SYNC`: Manual trigger for visual sync glitches.
 - **Sound Toggle**: High-fidelity ambient drone and interactive pings.
@@ -48,7 +48,7 @@ User enters the simulation -> Boot sequence initializes systems
 flowchart TD
     App[Next.js App Router] --> UI[Neo-Brutalist HUD Layer]
     App --> Simulation[Canvas Engine]
-    Simulation --> Particles[Entity Physics]
+    Simulation --> Particles[Entity Physics & Procedural Avatars]
     Simulation --> Shards[Shatter Physics]
     Simulation --> Links[Dynamic Network Links]
     App --> Audio[Web Audio API Engine]
@@ -73,6 +73,10 @@ flowchart TD
 ## Technical Highlights
 
 **High-Performance Sharding** — The glass shatter effect uses a dedicated shard pool with independent rotational velocity, gravity, and lifetime counters. This ensures 100+ high-fidelity triangles can explode without affecting framerates.
+
+**Procedural Avatar Generation** — Instead of static images, entities are dynamically generated as complex SVGs at runtime, offering vast diversity in skin tones, hair styles, and clothing hues.
+
+**Thematic Title Animation** — The main 'Oikya' text is driven by a React state effect that dynamically swaps the gendered colors (Cyan and Magenta) of the 'O' and 'a' letters every 5 seconds to physically reinforce the theme of interchanging gender roles.
 
 **Procedural Audio Feedback** — Instead of static MP3s, the project uses procedural white noise filters and sine oscillator pings. This keeps the bundle size tiny while providing infinite variation in feedback sounds.
 
