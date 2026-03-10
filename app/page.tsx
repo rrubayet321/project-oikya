@@ -710,6 +710,17 @@ export default function Home() {
           />
         </div>
 
+        {/* Click Hint */}
+        <p
+          className="mt-2 text-[9px] uppercase tracking-[0.4em] text-white/30 transition-all duration-300 hover:text-white/70 pointer-events-auto cursor-pointer flex items-center gap-2"
+          onClick={() => setShowMeaning(true)}
+          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+        >
+          <span className="w-2 h-2 rounded-full bg-[#FF90E8]/40 animate-pulse"></span>
+          CLICK TO DECRYPT THEME
+          <span className="w-2 h-2 rounded-full bg-[#00F0FF]/40 animate-pulse"></span>
+        </p>
+
         {/* Instruction */}
         <p className="mt-5 instruction-pulse"
           style={{
