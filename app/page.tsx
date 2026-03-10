@@ -647,15 +647,15 @@ export default function Home() {
 
         {/* Artistic subtitle text */}
         <p
-          className="tracking-widest mb-1"
+          className="tracking-widest mb-2"
           style={{
             fontFamily: "var(--font-space-grotesk), sans-serif",
-            fontWeight: 400,
+            fontWeight: 500,
             textTransform: "uppercase",
-            fontSize: "clamp(0.85rem, 1.4vw, 1.05rem)",
-            letterSpacing: "0.40em",
-            color: "rgba(255,255,255,0.6)",
-            textShadow: "0 0 10px rgba(255,144,232,0.2)",
+            fontSize: "clamp(0.9rem, 1.5vw, 1.1rem)",
+            letterSpacing: "0.45em",
+            color: "rgba(255,255,255,0.85)",
+            textShadow: "0 0 12px rgba(255,144,232,0.4)",
           }}
         >
           THE INITIATIVE
@@ -712,13 +712,16 @@ export default function Home() {
 
         {/* Click Hint */}
         <p
-          className="mt-2 text-[9px] uppercase tracking-[0.4em] text-white/30 transition-all duration-300 hover:text-white/70 pointer-events-auto cursor-pointer flex items-center gap-2"
+          className="mt-4 text-[11px] uppercase tracking-[0.4em] text-white/70 transition-all duration-300 hover:text-white pointer-events-auto cursor-pointer flex items-center gap-2"
           onClick={() => setShowMeaning(true)}
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            textShadow: "0 0 10px rgba(255,255,255,0.3)"
+          }}
         >
-          <span className="w-2 h-2 rounded-full bg-[#FF90E8]/40 animate-pulse"></span>
+          <span className="w-2 h-2 rounded-full bg-[#FF90E8]/70 animate-pulse shadow-[0_0_8px_rgba(255,144,232,0.6)]"></span>
           CLICK TO DECRYPT THEME
-          <span className="w-2 h-2 rounded-full bg-[#00F0FF]/40 animate-pulse"></span>
+          <span className="w-2 h-2 rounded-full bg-[#00F0FF]/70 animate-pulse shadow-[0_0_8px_rgba(0,240,255,0.6)]"></span>
         </p>
 
         {/* Instruction */}
