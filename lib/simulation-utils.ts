@@ -7,6 +7,8 @@ export interface Particle {
     side: "left" | "right";
     radius: number;
     role: string;
+    avatarDataUrl: string;
+    img?: HTMLImageElement;
 }
 
 export interface Shard {
@@ -48,40 +50,93 @@ export const TECH_ROLES = [
     "UI_UX",
 ];
 
-export const MALE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <rect x="3" y="10" width="10" height="6" fill="#3B82F6"/>
-  <rect x="5" y="10" width="6" height="2" fill="#2563EB"/>
-  <rect x="6" y="8" width="4" height="2" fill="#FBBF24"/>
-  <rect x="4" y="3" width="8" height="7" fill="#FBBF24"/>
-  <rect x="4" y="2" width="2" height="2" fill="#1F2937"/>
-  <rect x="6" y="1" width="2" height="3" fill="#1F2937"/>
-  <rect x="8" y="2" width="2" height="2" fill="#1F2937"/>
-  <rect x="10" y="1" width="2" height="3" fill="#1F2937"/>
-  <rect x="4" y="6" width="3" height="2" fill="#1F2937"/>
-  <rect x="9" y="6" width="3" height="2" fill="#1F2937"/>
-  <rect x="7" y="7" width="2" height="1" fill="#1F2937"/>
-  <rect x="5" y="6" width="1" height="1" fill="#60A5FA"/>
-  <rect x="10" y="6" width="1" height="1" fill="#60A5FA"/>
-  <rect x="6" y="9" width="4" height="1" fill="#92400E"/>
-  <rect x="6" y="12" width="4" height="2" fill="#2563EB"/>
-</svg>`;
+const SKIN_TONES = [
+    "#FFDCB6", "#E5B887", "#CE965F", "#B57134", "#915016",
+    "#50280B", "#F8D9C0", "#E0AC69", "#8D5524", "#3D2210"
+];
 
-export const FEMALE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <rect x="3" y="10" width="10" height="6" fill="#EC4899"/>
-  <rect x="5" y="10" width="6" height="2" fill="#DB2777"/>
-  <rect x="6" y="8" width="4" height="2" fill="#FBBF24"/>
-  <rect x="4" y="3" width="8" height="7" fill="#FBBF24"/>
-  <rect x="3" y="2" width="10" height="3" fill="#7C3AED"/>
-  <rect x="3" y="5" width="2" height="5" fill="#7C3AED"/>
-  <rect x="11" y="5" width="2" height="5" fill="#7C3AED"/>
-  <rect x="4" y="6" width="3" height="2" fill="#1F2937"/>
-  <rect x="9" y="6" width="3" height="2" fill="#1F2937"/>
-  <rect x="7" y="7" width="2" height="1" fill="#1F2937"/>
-  <rect x="5" y="6" width="1" height="1" fill="#F472B6"/>
-  <rect x="10" y="6" width="1" height="1" fill="#F472B6"/>
-  <rect x="6" y="9" width="4" height="1" fill="#92400E"/>
-  <rect x="6" y="12" width="4" height="2" fill="#DB2777"/>
-</svg>`;
+const HAIR_COLORS = [
+    "#090806", "#2C222B", "#71635A", "#B7A69E", "#D6C4C2",
+    "#CABFB1", "#DCD0BA", "#FFF5E1", "#E6CEA8", "#E5C8A8",
+    "#DEBC99", "#A56B46", "#B55239", "#8D4A43", "#533D32",
+    "#3B3024", "#554838", "#4E433F", "#A0213E"
+];
+
+const CYAN_HUES = [
+    "#00F0FF", "#00D1FF", "#00A3FF", "#00FFFF", "#3B82F6", "#2563EB"
+];
+
+const MAGENTA_HUES = [
+    "#FF90E8", "#D946EF", "#C026D3", "#EC4899", "#DB2777", "#F472B6"
+];
+
+export function generateAvatarSVG(side: "left" | "right"): string {
+    const skin = SKIN_TONES[Math.floor(Math.random() * SKIN_TONES.length)];
+    const hair = HAIR_COLORS[Math.floor(Math.random() * HAIR_COLORS.length)];
+    const isLeft = side === "left";
+
+    // Pick clothing color based on side
+    const clothesBase = isLeft
+        ? CYAN_HUES[Math.floor(Math.random() * CYAN_HUES.length)]
+        : MAGENTA_HUES[Math.floor(Math.random() * MAGENTA_HUES.length)];
+    const clothesDark = isLeft ? "#2563EB" : "#DB2777"; // fallback shading
+
+    // Generate random hair style variations (0 to 2)
+    const hairStyle = Math.floor(Math.random() * 3);
+
+    // Male-ish / Female-ish shapes can be mixed for true diversity, or keep distinct structural bases.
+    // For visual distinctiveness between left and right groups initially, we'll keep the base 
+    // structures slightly varied but fully diverse in color.
+
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+      <rect x="3" y="10" width="10" height="6" fill="${clothesBase}"/>
+      <rect x="5" y="10" width="6" height="2" fill="${clothesDark}"/>
+      <rect x="6" y="8" width="4" height="2" fill="${skin}"/>
+      <rect x="4" y="3" width="8" height="7" fill="${skin}"/>
+    `;
+
+    // Eye color
+    const eyeColor = isLeft ? "#60A5FA" : "#F472B6";
+    svg += `<rect x="5" y="6" width="1" height="1" fill="${eyeColor}"/>
+            <rect x="10" y="6" width="1" height="1" fill="${eyeColor}"/>
+            <rect x="6" y="9" width="4" height="1" fill="#92400E"/>
+            <rect x="6" y="12" width="4" height="2" fill="${clothesDark}"/>
+           `;
+
+    if (isLeft) {
+        // Base hair for left entities
+        svg += `
+          <rect x="4" y="2" width="2" height="2" fill="${hair}"/>
+          <rect x="6" y="1" width="2" height="3" fill="${hair}"/>
+          <rect x="8" y="2" width="2" height="2" fill="${hair}"/>
+          <rect x="10" y="1" width="2" height="3" fill="${hair}"/>
+        `;
+        if (hairStyle === 1) {
+            svg += `
+              <rect x="4" y="6" width="3" height="2" fill="${hair}"/>
+              <rect x="9" y="6" width="3" height="2" fill="${hair}"/>
+            `;
+        } else if (hairStyle === 2) {
+            svg += `<rect x="7" y="7" width="2" height="1" fill="${hair}"/>`;
+        }
+    } else {
+        // Base hair for right entities
+        svg += `
+          <rect x="3" y="2" width="10" height="3" fill="${hair}"/>
+          <rect x="3" y="5" width="2" height="5" fill="${hair}"/>
+          <rect x="11" y="5" width="2" height="5" fill="${hair}"/>
+        `;
+        if (hairStyle === 1) {
+            svg += `
+              <rect x="4" y="6" width="3" height="2" fill="${hair}"/>
+              <rect x="9" y="6" width="3" height="2" fill="${hair}"/>
+            `;
+        }
+    }
+
+    svg += `</svg>`;
+    return svg;
+}
 
 export function svgToDataUrl(svgStr: string): string {
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgStr)}`;
@@ -90,6 +145,7 @@ export function svgToDataUrl(svgStr: string): string {
 export function makeParticle(side: "left" | "right", w: number, h: number): Particle {
     const half = w / 2;
     const angle = Math.random() * Math.PI * 2;
+    const svgStr = generateAvatarSVG(side);
     return {
         x: side === "left"
             ? Math.random() * (half - 30) + 15
@@ -101,6 +157,7 @@ export function makeParticle(side: "left" | "right", w: number, h: number): Part
         side,
         radius: RADIUS,
         role: TECH_ROLES[Math.floor(Math.random() * TECH_ROLES.length)],
+        avatarDataUrl: svgToDataUrl(svgStr),
     };
 }
 

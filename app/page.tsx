@@ -18,8 +18,6 @@ import {
   PARALLAX_CANVAS_PX,
   PARALLAX_TITLE_PX,
   PARALLAX_GRID_PX,
-  MALE_SVG,
-  FEMALE_SVG,
   svgToDataUrl,
   makeParticle,
   roundRect
@@ -36,9 +34,6 @@ export default function Home() {
   const wallActiveRef = useRef(true);
   const isDraggingRef = useRef(false);
   const animFrameRef = useRef<number>(0);
-  const maleImgRef = useRef<HTMLImageElement | null>(null);
-  const femaleImgRef = useRef<HTMLImageElement | null>(null);
-  const imagesReadyRef = useRef(false);
 
   // ── Feature 1: Hover tooltip refs ──
   const mouseRef = useRef<{ x: number; y: number } | null>(null);
@@ -73,19 +68,7 @@ export default function Home() {
   const [bootKey, setBootKey] = useState(0);
   const [speedFactor, setSpeedFactor] = useState(1.0);
 
-  // Load avatar images
-  useEffect(() => {
-    const mImg = new Image();
-    const fImg = new Image();
-    mImg.src = svgToDataUrl(MALE_SVG);
-    fImg.src = svgToDataUrl(FEMALE_SVG);
-    let loaded = 0;
-    const onLoad = () => { loaded++; if (loaded === 2) imagesReadyRef.current = true; };
-    mImg.onload = onLoad;
-    fImg.onload = onLoad;
-    maleImgRef.current = mImg;
-    femaleImgRef.current = fImg;
-  }, []);
+  // Images are generated per-particle now.
 
   const initParticles = useCallback((w: number, h: number, speed: number = SPEED) => {
     const p: Particle[] = [];
@@ -93,6 +76,11 @@ export default function Home() {
       const p = makeParticle(side, w, h);
       p.vx *= (speed / SPEED);
       p.vy *= (speed / SPEED);
+
+      const img = new Image();
+      img.src = p.avatarDataUrl;
+      p.img = img;
+
       return p;
     };
     for (let i = 0; i < PARTICLE_COUNT / 2; i++) p.push(makeP("left"));
@@ -514,13 +502,13 @@ export default function Home() {
         ctx.fillStyle = glow;
         ctx.fill();
 
-        if (imagesReadyRef.current) {
-          const img = p.side === "left" ? maleImgRef.current : femaleImgRef.current;
-          if (img) {
-            ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(img, p.x - half, p.y - half, AVATAR_SIZE, AVATAR_SIZE);
-          }
+        const size = p.radius * 2;
+        const img = p.img;
+        if (img && img.complete) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(img, p.x - half, p.y - half, AVATAR_SIZE, AVATAR_SIZE);
         } else {
+          // fallback
           ctx.beginPath();
           ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
           ctx.fillStyle = p.color;
