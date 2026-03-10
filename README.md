@@ -1,146 +1,112 @@
-<div align="center">
-  <br />
-  <h1 align="center">PROJECT OIKYA <br/> <code>[ ঐক্য ]</code></h1>
-  <p align="center">
-    <strong>An interactive frontend art piece celebrating the people behind the code.</strong><br>
-    <em>Built for the DEV.to WeCoded 2026 Challenge.</em>
-  </p>
-  <br />
-  <p align="center">
-    <a href="https://github.com/rrubayet321/project-oikya/commits/main">
-      <img alt="Commits" src="https://img.shields.io/github/commit-activity/m/rrubayet321/project-oikya?color=00F0FF&style=flat-square">
-    </a>
-    <a href="https://nextjs.org/">
-      <img alt="Next.js" src="https://img.shields.io/badge/Next.js-15.0-black?style=flat-square&logo=next.js&color=0a0a0a" />
-    </a>
-    <a href="https://tailwindcss.com/">
-      <img alt="TailwindCSS" src="https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=flat-square&logo=tailwind-css&color=00F0FF" />
-    </a>
-  </p>
-</div>
-
-<br />
-
-> **Oikya** (/oi·kyo/) — Bengali for *unity* or *solidarity*. From the Sanskrit *aikya* (oneness).
-
 # Project Oikya — Breaking Isolation
 
-Project Oikya is an immersive, interactive legal/social art piece developed for **DEV WeCoded 2026**. It serves as a living simulation of gender equity in the tech industry, visualized through a dynamic network of entities separated by a systemic barrier.
+![Next.js](https://img.shields.io/badge/Next.js-15%2B-000000?logo=next.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4%2B-06B6D4?logo=tailwind-css&logoColor=white)
+![Canvas API](https://img.shields.io/badge/Graphics-Canvas_API-FF3333?logo=html5&logoColor=white)
+![Web Audio](https://img.shields.io/badge/Audio-Web_Audio_API-000000?logo=audio-video&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
-![Project Preview](https://github.com/rrubayet321-/project-oikya/raw/main/public/preview.png)
+> "Unity is not uniformity." — Project Oikya is a living simulation of gender equity in tech, visualized through high-performance particle physics.
 
-## 🌌 The Concept
+**Project Oikya** (ঐক্য) is an immersive, interactive legal/social art piece developed for **DEV WeCoded 2026**. It visualizes the historical "glass ceiling" in the tech industry. Entities possess identical capabilities, yet are artificially isolated by a systemic barrier—until **you** act as the catalyst to shatter it.
 
-Historically, the tech industry has operated in isolated silos. Women and men developers often existed within same ecosystems, yet systemic barriers—the "glass ceiling"—kept their communities separated. 
-
-**Oikya** (Bengali for "Unity") simulates this divide. Upon initialization, 40 entities run parallel but isolated. They possess identical capabilities, yet they are artificially prevented from connecting. By interacting with the simulation, **you act as the catalyst** to shatter the barrier and unify the network.
-
-## 🛠 Features
-
-- **Dynamic Interaction**: Drag across the central barrier to trigger a "glass shatter" effect and unify the entities.
-- **Cyber-HUD Dashboard**: Real-time tracking of system metrics, connectivity, and synergy levels.
-- **Control Center**:
-  - **Reboot System**: Reset the simulation and boot protocol at any time.
-  - **Velocity Control**: Dynamically adjust the movement speed of elements.
-  - **Glitch Sync**: Manually trigger system-wide visual sync effects.
-- **Generative Background**: A pixelated "Hero Wave" background that reacts to the simulation's state.
-- **Immersive Audio**: Ambient drone and interactive "pings" that respond to network movements (Mute toggle included).
-
-## 🚀 Getting Started
-
-1. **Clone & Install**:
-   ```bash
-   git clone https://github.com/rrubayet321-/project-oikya.git
-   cd project-oikya
-   npm install
-   ```
-
-2. **Run Locally**:
-   ```bash
-   npm run dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000) to view the simulation.
-
-3. **Interact**:
-   - **Click "Oikya"**: Reveal the semantic meaning and lore behind the project.
-   - **Drag across center**: Shatter the isolation barrier.
-   - **Type `EXECUTE OIKYA`**: Trigger the secret override command.
-
-## 🎨 Tech Stack
-
-- **Next.js 15+** (App Router)
-- **TypeScript**
-- **Tailwind CSS** (Neo-Brutalist Layouts)
-- **Canvas API** (Performance-tuned particles & shards)
-- **Web Audio API** (Procedural ambient sound)
+Built as a high-end experimental frontend project to explore Canvas-based generative art, procedural audio, and Cyber-HUD interaction design.
 
 ---
 
-**Built with 💜 by [rrubayet321-](https://github.com/rrubayet321-)**
- is a living, interactive canvas that uses a particle physics simulation to visualize the historical and systemic gender divide in the tech industry—and the powerful unity that forms when we break those barriers down.
+## Demo & Interaction Flow
 
-Wrapped in a **Gen-Z Hacker / Cyber-Data HUD** aesthetic, the application invites users to act as the catalyst for change.
+```
+User enters the simulation → Boot sequence initializes systems
+           ↓
+  Entities move in isolation (Left: Male | Right: Female)
+           ↓
+  User DRAGS across the central vertical barrier 
+           ↓
+  "GLASS SHATTER" sequence triggers (80+ shards, shards gravity physics)
+           ↓
+  Barrier dissolves → Protocol becomes "UNIFIED"
+           ↓
+  Inter-gender connections form a complex, glowing network
+```
 
-<br />
+**Interaction Controls:**
+- • **Click "Oikya"**: Deep-dive into the project's semantic meaning and lore via a premium glassmorphic modal.
+- • **Drag Barrier**: Shatter the systemic divide manually.
+- • **Control Center (Bottom-Left)**: 
+    - • `REBOOT_SYSTEM`: Full state reset with fresh boot logs.
+    - • `Velocity_Factor`: Real-time avatar speed adjustment (0.5x – 3.0x).
+    - • `GLITCH_SYNC`: Manual trigger for visual sync glitches.
+- • **Sound Toggle**: High-fidelity ambient drone and interactive pings.
 
+---
 
-### `STATE_01: ISOLATION`
-Upon initialization, 40 pixel-art entities (representing male and female developers) are strictly separated by an invisible vertical barrier. They move, but they cannot connect. The system status remains `AWAITING_CATALYST`.
+## Architecture
 
-### `CATALYST_EVENT: DRAG_TO_BREAK`
-The user's interaction—clicking and dragging across the center barrier—acts as the catalyst. The invisible wall shatters, triggering an aggressive system glitch and an auditory burst of shattered glass.
+```mermaid
+flowchart TD
+    App[Next.js App Router] --> UI[Neo-Brutalist HUD Layer]
+    App --> Simulation[Canvas Engine]
+    Simulation --> Particles[Entity Physics]
+    Simulation --> Shards[Shatter Physics]
+    Simulation --> Links[Dynamic Network Links]
+    App --> Audio[Web Audio API Engine]
+    Audio --> Drone[Ambient Drone]
+    Audio --> Pings[Interactive Feedback]
+```
 
-### `STATE_02: UNIFIED_NETWORK`
-Once broken, the entities freely intermix. The system dynamically draws glowing, gradient network links (cyan to purple to magenta) between nearby avatars. The isolated silos transform into a single, vibrant, and equal community. The system status updates to `UNIFIED`.
+---
 
-<br />
+## Tech Stack
 
-## // FEATURES_AND_INTERACTIVITY
+| Layer | Technology | Why |
+|---|---|---|
+| Framework | Next.js 15+ | App Router for modern routing and performance optimization. |
+| Styling | Tailwind CSS | Utility-first CSS for complex Neo-Brutalist and Cyber-HUD layouts. |
+| Rendering | HTML5 Canvas API | High-performance particle physics and real-time shard animation. |
+| Audio | Web Audio API | Procedural, low-latency ambient sounds and feedback pings. |
+| Typography | Google Fonts | Space Grotesk, Syne, and JetBrains Mono for a professional coding aesthetic. |
 
-- **Dynamic HUD Metrics:** The system overlays feature a reactive "Neo-Brutalist" dashboard tracking real-time data: `ENTITIES`, live `CONNECTIONS`, and overall `SYNERGY %`.
-- **Procedural Audio (Web Audio API):**
-  - Ambient detuned drone (55Hz / 55.4Hz) indicating system energy.
-  - Generative "glass shatter" noise burst on barrier break.
-  - Soft, randomized sine pings (800Hz - 1400Hz) when new cross-connections form.
-- **Micro-Interactions:**
-  - **Hover Tooltips:** Hovering over any entity freezes its movement, enhances its glow, and reveals its randomly assigned technical role (e.g., `[ROLE: AI_RESEARCHER]`, `[ROLE: DEVOPS]`).
-  - **Lexicon Popup:** Clicking the massive, gradient-shifting "Oikya" title reveals a frosted-glass overlay explaining the word's etymology.
-- **Smooth Mouse Parallax:** The entire canvas, dot-grid background, and title text shift subtly based on mouse position using lerp interpolation for a premium sense of depth.
-- **Easter Egg CLI:** A hidden command-line interface (`> _`). Typing `EXECUTE OIKYA` triggers a system overwrite, breaking the barrier programmatically with a CSS glitch-shake animation.
+---
 
-<br />
+## Technical Highlights
 
-## // STACK_AND_ARCHITECTURE
+**High-Performance Sharding** — The glass shatter effect uses a dedicated shard pool with independent rotational velocity, gravity, and lifetime counters. This ensures 100+ high-fidelity triangles can explode without affecting framerates.
 
-- **Framework:** Next.js (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS (Strictly utility-centric, no standard CSS files beyond globals)
-- **Engine:** Built from scratch on native HTML5 `<canvas>` using the `requestAnimationFrame` API for 60FPS particle physics, collision detection, and parallax interpolation.
-- **Aesthetic DNA:** Deep blacks (`#0a0a0a`), Neon Cyan (`#00F0FF`), Neon Magenta (`#FF90E8`), strict Monospace typing (`JetBrains Mono`), and frosted glass frames.
+**Procedural Audio Feedback** — Instead of static MP3s, the project uses procedural white noise filters and sine oscillator pings. This keeps the bundle size tiny while providing infinite variation in feedback sounds.
 
-<br />
+**Parallax Grid System** — The entire UI (Canvas + HUD + Grid) is wired to a normalized mouse parallax engine with lerped smoothing. This prevents "jitter" and gives the interface a premium, physical depth.
 
-## // RUNNING_LOCALLY
+**Fast-Fail State Recovery** — The `handleRestart` logic performs a deep reset of both React state and `useRef` particle pools, ensuring a leak-free experience even after multiple re-initializations.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Modern Browser (Chrome/Safari/Edge)
+
+### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/rrubayet321/project-oikya.git
-
-# Navigate into the directory
 cd project-oikya
 
-# Install dependencies
 npm install
-
-# Boot the simulation
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the project.
+Visit [http://localhost:3000](http://localhost:3000) to act as the catalyst.
 
 ---
 
-<div align="center">
-  <p><i>"Breaking isolation, one connection at a time."</i></p>
-  <p>Built for the DEV.to WeCoded challenge.</p>
-</div>
+## License
+
+[MIT](LICENSE)
+
+---
+
+Built with 💜 by [Rubayet Hassan](https://github.com/rrubayet321-)
