@@ -23,13 +23,66 @@
 
 > **Oikya** (/oi·kyo/) — Bengali for *unity* or *solidarity*. From the Sanskrit *aikya* (oneness).
 
-Project Oikya is a living, interactive canvas that uses a particle physics simulation to visualize the historical and systemic gender divide in the tech industry—and the powerful unity that forms when we break those barriers down.
+# Project Oikya — Breaking Isolation
+
+Project Oikya is an immersive, interactive legal/social art piece developed for **DEV WeCoded 2026**. It serves as a living simulation of gender equity in the tech industry, visualized through a dynamic network of entities separated by a systemic barrier.
+
+![Project Preview](https://github.com/rrubayet321-/project-oikya/raw/main/public/preview.png)
+
+## 🌌 The Concept
+
+Historically, the tech industry has operated in isolated silos. Women and men developers often existed within same ecosystems, yet systemic barriers—the "glass ceiling"—kept their communities separated. 
+
+**Oikya** (Bengali for "Unity") simulates this divide. Upon initialization, 40 entities run parallel but isolated. They possess identical capabilities, yet they are artificially prevented from connecting. By interacting with the simulation, **you act as the catalyst** to shatter the barrier and unify the network.
+
+## 🛠 Features
+
+- **Dynamic Interaction**: Drag across the central barrier to trigger a "glass shatter" effect and unify the entities.
+- **Cyber-HUD Dashboard**: Real-time tracking of system metrics, connectivity, and synergy levels.
+- **Control Center**:
+  - **Reboot System**: Reset the simulation and boot protocol at any time.
+  - **Velocity Control**: Dynamically adjust the movement speed of elements.
+  - **Glitch Sync**: Manually trigger system-wide visual sync effects.
+- **Generative Background**: A pixelated "Hero Wave" background that reacts to the simulation's state.
+- **Immersive Audio**: Ambient drone and interactive "pings" that respond to network movements (Mute toggle included).
+
+## 🚀 Getting Started
+
+1. **Clone & Install**:
+   ```bash
+   git clone https://github.com/rrubayet321-/project-oikya.git
+   cd project-oikya
+   npm install
+   ```
+
+2. **Run Locally**:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) to view the simulation.
+
+3. **Interact**:
+   - **Click "Oikya"**: Reveal the semantic meaning and lore behind the project.
+   - **Drag across center**: Shatter the isolation barrier.
+   - **Type `EXECUTE OIKYA`**: Trigger the secret override command.
+
+## 🎨 Tech Stack
+
+- **Next.js 15+** (App Router)
+- **TypeScript**
+- **Tailwind CSS** (Neo-Brutalist Layouts)
+- **Canvas API** (Performance-tuned particles & shards)
+- **Web Audio API** (Procedural ambient sound)
+
+---
+
+**Built with 💜 by [rrubayet321-](https://github.com/rrubayet321-)**
+ is a living, interactive canvas that uses a particle physics simulation to visualize the historical and systemic gender divide in the tech industry—and the powerful unity that forms when we break those barriers down.
 
 Wrapped in a **Gen-Z Hacker / Cyber-Data HUD** aesthetic, the application invites users to act as the catalyst for change.
 
 <br />
 
-## // THE_SIMULATION
 
 ### `STATE_01: ISOLATION`
 Upon initialization, 40 pixel-art entities (representing male and female developers) are strictly separated by an invisible vertical barrier. They move, but they cannot connect. The system status remains `AWAITING_CATALYST`.

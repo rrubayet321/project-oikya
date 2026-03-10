@@ -179,6 +179,7 @@ export default function Home() {
   const [introDone, setIntroDone] = useState(false);
   const [introLines, setIntroLines] = useState<string[]>([]);
   const [introFading, setIntroFading] = useState(false);
+  const [speedFactor, setSpeedFactor] = useState(1.0);
 
   const BOOT_LINES = [
     "> INITIALIZING OIKYA_PROTOCOL v2.26...",
@@ -202,10 +203,16 @@ export default function Home() {
     femaleImgRef.current = fImg;
   }, []);
 
-  const initParticles = useCallback((w: number, h: number) => {
+  const initParticles = useCallback((w: number, h: number, speed: number = SPEED) => {
     const p: Particle[] = [];
-    for (let i = 0; i < PARTICLE_COUNT / 2; i++) p.push(makeParticle("left", w, h));
-    for (let i = 0; i < PARTICLE_COUNT / 2; i++) p.push(makeParticle("right", w, h));
+    const makeP = (side: "left" | "right") => {
+      const p = makeParticle(side, w, h);
+      p.vx *= (speed / SPEED);
+      p.vy *= (speed / SPEED);
+      return p;
+    };
+    for (let i = 0; i < PARTICLE_COUNT / 2; i++) p.push(makeP("left"));
+    for (let i = 0; i < PARTICLE_COUNT / 2; i++) p.push(makeP("right"));
     return p;
   }, []);
 
@@ -224,7 +231,23 @@ export default function Home() {
     }, 420);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [introDone]); // Re-run if introDone resets
+
+  const handleRestart = useCallback(() => {
+    setIntroDone(false);
+    setIntroLines([]);
+    setIntroFading(false);
+    wallActiveRef.current = true;
+    wallBrokenRef.current = false;
+    setLiveStatus("AWAITING_CATALYST");
+    setLiveConnections(0);
+    setLiveSynergy(0);
+    shardsRef.current = [];
+    const canvas = canvasRef.current;
+    if (canvas) {
+      particlesRef.current = initParticles(canvas.width, canvas.height, SPEED * speedFactor);
+    }
+  }, [initParticles, speedFactor]);
 
   // ── Audio helpers ──
   const initAudio = useCallback(() => {
@@ -398,7 +421,7 @@ export default function Home() {
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      particlesRef.current = initParticles(canvas.width, canvas.height);
+      particlesRef.current = initParticles(canvas.width, canvas.height, SPEED * speedFactor);
       wallActiveRef.current = true;
     };
     resize();
@@ -1036,6 +1059,103 @@ export default function Home() {
           >
             The People Behind The Code
           </p>
+          <a
+            href="https://github.com/rrubayet321-"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 transition-all duration-300 hover:text-[#00F0FF] hover:drop-shadow-[0_0_8px_rgba(0,240,255,0.6)]"
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: "9px",
+              color: "rgba(255,255,255,0.2)",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              textDecoration: "none",
+              pointerEvents: "auto",
+            }}
+          >
+            Built by rrubayet321-
+          </a>
+        </div>
+
+        {/* Bottom-left: Control Center Panel */}
+        <div className="absolute bottom-24 left-6 pointer-events-auto">
+          <div
+            className="neo-card rounded-sm px-4 py-3 min-w-[200px]"
+            style={{
+              borderColor: "rgba(178,141,255,0.3)",
+              boxShadow: "4px 4px 0px 0px rgba(178,141,255,0.1)",
+              background: "rgba(10, 10, 15, 0.8)",
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: "9px",
+                color: "rgba(178,141,255,0.6)",
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                marginBottom: "12px",
+                borderBottom: "1px solid rgba(178,141,255,0.1)",
+                paddingBottom: "4px",
+              }}
+            >
+              // Control_Center
+            </p>
+
+            <div className="space-y-4">
+              {/* Restart Button */}
+              <button
+                onClick={handleRestart}
+                className="w-full py-2 px-3 flex items-center justify-between border border-dashed border-white/20 hover:border-[#00F0FF]/50 transition-colors group"
+                style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px" }}
+                aria-label="Restart Simulation"
+              >
+                <span className="text-white/40 group-hover:text-[#00F0FF]/80 transition-colors">REBOOT_SYSTEM</span>
+                <span className="text-[#00F0FF]">⟳</span>
+              </button>
+
+              {/* Speed Control */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[9px] font-mono text-white/30 uppercase tracking-wider">
+                  <span>Velocity_Factor</span>
+                  <span className="text-[#B28DFF]">{speedFactor.toFixed(1)}x</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="3.0"
+                  step="0.1"
+                  value={speedFactor}
+                  onChange={(e) => {
+                    const newFactor = parseFloat(e.target.value);
+                    const ratio = newFactor / speedFactor;
+                    particlesRef.current.forEach(p => {
+                      p.vx *= ratio;
+                      p.vy *= ratio;
+                    });
+                    setSpeedFactor(newFactor);
+                  }}
+                  className="w-full accent-[#B28DFF] cursor-pointer"
+                  style={{ height: "4px" }}
+                />
+              </div>
+
+              {/* Glitch Trigger */}
+              <button
+                onClick={() => {
+                  setGlitchActive(true);
+                  setTimeout(() => setGlitchActive(false), 500);
+                }}
+                className="w-full py-2 px-3 flex items-center justify-between border border-dashed border-white/20 hover:border-[#FF90E8]/50 transition-colors group"
+                style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px" }}
+                aria-label="Trigger Glitch Effect"
+              >
+                <span className="text-white/40 group-hover:text-[#FF90E8]/80 transition-colors">GLITCH_SYNC</span>
+                <span className="text-[#FF90E8]">↯</span>
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
