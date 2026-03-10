@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface IntroBootSequenceProps {
     onComplete?: () => void;
@@ -17,6 +17,11 @@ export function IntroBootSequence({ onComplete }: IntroBootSequenceProps) {
     const [introFading, setIntroFading] = useState(false);
     const [introDone, setIntroDone] = useState(false);
 
+    const onCompleteRef = useRef(onComplete);
+    useEffect(() => {
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
+
     useEffect(() => {
         let i = 0;
         const interval = setInterval(() => {
@@ -28,12 +33,12 @@ export function IntroBootSequence({ onComplete }: IntroBootSequenceProps) {
                 setTimeout(() => setIntroFading(true), 600);
                 setTimeout(() => {
                     setIntroDone(true);
-                    onComplete?.();
+                    onCompleteRef.current?.();
                 }, 1400);
             }
         }, 420);
         return () => clearInterval(interval);
-    }, [onComplete]);
+    }, []);
 
     if (introDone) return null;
 

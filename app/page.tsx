@@ -116,6 +116,10 @@ export default function Home() {
     }
   }, [initParticles, speedFactor]);
 
+  const handleIntroComplete = useCallback(() => {
+    setIntroDone(true);
+  }, []);
+
   // ── Audio helpers ──
   const initAudio = useCallback(() => {
     if (audioStartedRef.current) return;
@@ -1133,7 +1137,7 @@ export default function Home() {
         </div>
       )}
       {/* ── Boot Intro Overlay ── */}
-      <IntroBootSequence key={bootKey} onComplete={() => setIntroDone(true)} />
+      <IntroBootSequence key={bootKey} onComplete={handleIntroComplete} />
 
       {/* ── Audio Toggle (Bottom Right) ── */}
       <div className="absolute bottom-6 right-6 z-50 pointer-events-auto">
