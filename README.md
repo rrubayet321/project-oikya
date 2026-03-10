@@ -18,27 +18,27 @@ Built as a high-end experimental frontend project to explore Canvas-based genera
 ## Demo & Interaction Flow
 
 ```
-User enters the simulation → Boot sequence initializes systems
-           ↓
+User enters the simulation -> Boot sequence initializes systems
+           |
   Entities move in isolation (Left: Male | Right: Female)
-           ↓
+           |
   User DRAGS across the central vertical barrier 
-           ↓
+           |
   "GLASS SHATTER" sequence triggers (80+ shards, shards gravity physics)
-           ↓
-  Barrier dissolves → Protocol becomes "UNIFIED"
-           ↓
+           |
+  Barrier dissolves -> Protocol becomes "UNIFIED"
+           |
   Inter-gender connections form a complex, glowing network
 ```
 
 **Interaction Controls:**
-- • **Click "Oikya"**: Deep-dive into the project's semantic meaning and lore via a premium glassmorphic modal.
-- • **Drag Barrier**: Shatter the systemic divide manually.
-- • **Control Center (Bottom-Left)**: 
-    - • `REBOOT_SYSTEM`: Full state reset with fresh boot logs.
-    - • `Velocity_Factor`: Real-time avatar speed adjustment (0.5x – 3.0x).
-    - • `GLITCH_SYNC`: Manual trigger for visual sync glitches.
-- • **Sound Toggle**: High-fidelity ambient drone and interactive pings.
+- **Click "Oikya"**: Deep-dive into the project's semantic meaning and lore via a premium glassmorphic modal.
+- **Drag Barrier**: Shatter the systemic divide manually.
+- **Control Center (Bottom-Left)**: 
+    - `REBOOT_SYSTEM`: Full state reset with fresh boot logs.
+    - `Velocity_Factor`: Real-time avatar speed adjustment (0.5x – 3.0x).
+    - `GLITCH_SYNC`: Manual trigger for visual sync glitches.
+- **Sound Toggle**: High-fidelity ambient drone and interactive pings.
 
 ---
 
@@ -109,4 +109,4 @@ Visit [http://localhost:3000](http://localhost:3000) to act as the catalyst.
 
 ---
 
-Built with 💜 by [Rubayet Hassan](https://github.com/rrubayet321-)
+Built by [Rubayet Hassan](https://github.com/rrubayet321-)
