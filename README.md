@@ -13,6 +13,8 @@
 
 Built as a high-end experimental frontend project to explore Canvas-based generative art, procedural audio, and Cyber-HUD interaction design.
 
+🔗 **[Experience the Live Simulation Here](https://project-oikya.vercel.app/)**
+
 ---
 
 ## Demo & Interaction Flow
